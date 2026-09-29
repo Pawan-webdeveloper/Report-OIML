@@ -44,7 +44,7 @@ class ExactNumeric(TypeDecorator):
     def process_bind_param(self, value, dialect):
         if value is None:
             return None
-        return str(dec(value))       # float aaya to yahin TypeError (guardrail!)
+        return str(dec(value))       # TypeError here if a float is passed (guardrail!)
 
     def process_result_value(self, value, dialect):
         if value is None:

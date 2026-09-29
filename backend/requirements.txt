@@ -5,8 +5,9 @@ alembic
 psycopg[binary]
 pydantic
 pydantic-settings
+email-validator
 argon2-cffi
-python-jose
+PyJWT
 weasyprint
 python-docx
 pyhanko
@@ -16,3 +17,4 @@ jinja2
 pytest
 hypothesis
 httpx
+python-multipart

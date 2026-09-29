@@ -1,0 +1,17 @@
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite'
+
+// Dev: same-origin /api → FastAPI (no CORS needed). Prod: set VITE_API_URL or
+// serve behind a reverse proxy that forwards /api to the backend.
+// Tailwind runs via postcss.config.js (tailwindcss v3).
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+    },
+  },
+})
