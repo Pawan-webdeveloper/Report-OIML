@@ -1,0 +1,89 @@
+{
+  "id": "oiml-r76-2006",
+  "title": "OIML R 76-1:2006 (E) — Non-automatic weighing instruments",
+  "source": "https://www.oiml.org/en/files/pdf_r/r076-1-e06.pdf",
+  "notes": "Saare numeric values STRINGS hain (Decimal loading). Har entry apna clause number carry karti hai.",
+
+  "classification_table3": {
+    "_clause": "R 76-1 Table 3",
+    "I":    { "e_min_g": "0.001", "e_max_g": null, "n_min": "50000", "n_max": null,     "min_in_e": "100" },
+    "II":   [
+      { "e_min_g": "0.001", "e_max_g": "0.05", "n_min": "100",  "n_max": "100000", "min_in_e": "20" },
+      { "e_min_g": "0.1",   "e_max_g": null,   "n_min": "5000", "n_max": "100000", "min_in_e": "50" }
+    ],
+    "III":  [
+      { "e_min_g": "0.1", "e_max_g": "2",  "n_min": "100", "n_max": "10000", "min_in_e": "20" },
+      { "e_min_g": "5",   "e_max_g": null, "n_min": "500", "n_max": "10000", "min_in_e": "20" }
+    ],
+    "IIII": { "e_min_g": "5", "e_max_g": null, "n_min": "100", "n_max": "1000", "min_in_e": "10" }
+  },
+
+  "mpe_bands": {
+    "_clause": "R 76-1 Table 6 (initial verification) — m in units of e; boundary INCLUSIVE",
+    "I":    [ { "up_to": "50000",  "mult": "0.5" }, { "up_to": "200000", "mult": "1.0" }, { "up_to": null, "mult": "1.5" } ],
+    "II":   [ { "up_to": "5000",   "mult": "0.5" }, { "up_to": "20000",  "mult": "1.0" }, { "up_to": null, "mult": "1.5" } ],
+    "III":  [ { "up_to": "500",    "mult": "0.5" }, { "up_to": "2000",   "mult": "1.0" }, { "up_to": null, "mult": "1.5" } ],
+    "IIII": [ { "up_to": "50",     "mult": "0.5" }, { "up_to": "200",    "mult": "1.0" }, { "up_to": null, "mult": "1.5" } ]
+  },
+
+  "in_service_multiplier": "2",
+
+  "test_catalogue": {
+    "_clause": "R 76-2 contents (doc §6.8)",
+    "entries": [
+      { "kind": "WEIGHING",             "form_no": "1",     "clause": "A.4.4/A.5.3.1", "applies_if": {},                                    "required": true },
+      { "kind": "TEMP_NOLOAD",          "form_no": "2",     "clause": "A.5.3.2",       "applies_if": {},                                    "required": true },
+      { "kind": "ECC_WEIGHTS",          "form_no": "3.1",   "clause": "A.4.7.1-3",     "applies_if": {},                                    "required": true },
+      { "kind": "ECC_ROLLING",          "form_no": "3.2",   "clause": "A.4.7.4",       "applies_if": { "rolling_load": true },              "required": false },
+      { "kind": "DISC_DIGITAL",         "form_no": "4.1.1", "clause": "A.4.8.2",       "applies_if": { "digital": true, "d_ge_5mg": true }, "required": false },
+      { "kind": "DISC_ANALOG",          "form_no": "4.1.2", "clause": "A.4.8.1",       "applies_if": { "analog": true },                    "required": false },
+      { "kind": "DISC_NONSELF",         "form_no": "4.1.3", "clause": "A.4.8.1",       "applies_if": { "non_self": true },                  "required": false },
+      { "kind": "SENSITIVITY",          "form_no": "4.2",   "clause": "A.4.9",         "applies_if": { "non_self": true },                  "required": false },
+      { "kind": "REPEATABILITY",        "form_no": "5",     "clause": "A.4.10",        "applies_if": {},                                    "required": true },
+      { "kind": "ZERO_RETURN",          "form_no": "6.1",   "clause": "A.4.11.2",      "applies_if": { "classes": ["II","III","IIII"] },    "required": true },
+      { "kind": "CREEP",                "form_no": "6.2",   "clause": "A.4.11.1",      "applies_if": { "classes": ["II","III","IIII"] },    "required": true },
+      { "kind": "STABILITY_EQ",         "form_no": "7",     "clause": "A.4.12",        "applies_if": { "print_store_zero_tare": true },     "required": false },
+      { "kind": "TILTING",              "form_no": "8",     "clause": "A.5.1",         "applies_if": { "liable_to_tilt": true },            "required": false },
+      { "kind": "TARE",                 "form_no": "9",     "clause": "A.4.6.1",       "applies_if": { "has_tare": true },                  "required": false },
+      { "kind": "WARMUP",               "form_no": "10",    "clause": "A.5.2",         "applies_if": { "electronic": true },                "required": true },
+      { "kind": "VOLTAGE",              "form_no": "11",    "clause": "A.5.4",         "applies_if": { "electronic": true },                "required": true },
+      { "kind": "DIST_DIPS",            "form_no": "12.1",  "clause": "B.3.1",         "applies_if": { "electronic": true, "mains_ac": true }, "required": true },
+      { "kind": "DIST_BURST_MAINS",     "form_no": "12.2a", "clause": "B.3.2",         "applies_if": { "electronic": true },                "required": true },
+      { "kind": "DIST_BURST_IO",        "form_no": "12.2b", "clause": "B.3.2",         "applies_if": { "electronic": true },                "required": true },
+      { "kind": "DIST_SURGE_AC",        "form_no": "12.3a", "clause": "B.3.3",         "applies_if": { "electronic": true, "mains_ac": true }, "required": true },
+      { "kind": "DIST_SURGE_OTHER",     "form_no": "12.3b", "clause": "B.3.3",         "applies_if": { "electronic": true },                "required": true },
+      { "kind": "DIST_ESD_DIRECT",      "form_no": "12.4a", "clause": "B.3.4",         "applies_if": { "electronic": true },                "required": true },
+      { "kind": "DIST_ESD_INDIRECT",    "form_no": "12.4b", "clause": "B.3.4",         "applies_if": { "electronic": true },                "required": true },
+      { "kind": "DIST_RADIATED",        "form_no": "12.5",  "clause": "B.3.5",         "applies_if": { "electronic": true },                "required": true },
+      { "kind": "DIST_CONDUCTED_RF",    "form_no": "12.6",  "clause": "B.3.6",         "applies_if": { "electronic": true },                "required": true },
+      { "kind": "DIST_VEHICLE_SUPPLY",  "form_no": "12.7a", "clause": "B.3.7",         "applies_if": { "electronic": true, "vehicle_powered": true }, "required": true },
+      { "kind": "DIST_VEHICLE_COUPLING","form_no": "12.7b", "clause": "B.3.7",         "applies_if": { "electronic": true, "vehicle_powered": true }, "required": true },
+      { "kind": "DAMP_HEAT",            "form_no": "13",    "clause": "B.2",           "applies_if": { "electronic": true },                "required": true },
+      { "kind": "SPAN_STABILITY",       "form_no": "14",    "clause": "B.4",           "applies_if": { "electronic": true },                "required": true },
+      { "kind": "ENDURANCE",            "form_no": "15",    "clause": "A.6",           "applies_if": { "max_le_100kg": true },              "required": false },
+      { "kind": "CONSTRUCTION",         "form_no": "16",    "clause": "-",             "applies_if": {},                                    "required": true },
+      { "kind": "CHECKLIST",            "form_no": "17",    "clause": "-",             "applies_if": {},                                    "required": true }
+    ]
+  },
+
+  "constants": {
+    "weights_error_max_fraction_of_mpe": { "value": "1/3",  "clause": "3.7.1" },
+    "rounding_elimination_if_d_gt_e":    { "value": "0.2",  "clause": "3.5.3.2" },
+    "zero_setting_accuracy_e":           { "value": "0.25", "clause": "4.5.2/4.6.3" },
+    "zero_return_limit_e":               { "value": "0.5",  "clause": "3.9.4.2" },
+    "creep_30min_e":                     { "value": "0.5",  "clause": "3.9.4.1" },
+    "creep_15_to_30min_e":               { "value": "0.2",  "clause": "3.9.4.1" },
+    "temp_no_load_limit_per_5c_e":       { "value": "1",    "clause": "3.9.2.3" },
+    "default_temp_limits_c":             { "min": "-10", "max": "40", "clause": "3.9.2.1" },
+    "tilt_default_limit":                { "value": "50/1000", "clause": "3.9.1.1c" },
+    "tilt_no_load_limit_e":              { "value": "2", "exclude_class_II_unless_direct_sales": true, "clause": "3.9.1.1" },
+    "eccentricity_load_fraction":        { "value": "1/3",  "clause": "3.6.2.1" },
+    "discrimination_extra_load_d":       { "value": "1.4",  "clause": "A.4.8.2" },
+    "disc_analog_fraction_of_mpe":       { "value": "0.7",  "clause": "A.4.8.1" },
+    "disc_nonself_fraction_of_mpe":      { "value": "0.4",  "clause": "A.4.8.1" },
+    "sensitivity_displacement_mm":       { "value": "1", "class_III_IIII_max_le_30kg": "2", "class_III_IIII_max_gt_30kg": "5", "clause": "A.4.9" },
+    "repeatability_count":               { "default": "10", "if_max_gt_1000kg": "3", "clause": "A.4.10 [M confirm]" },
+    "endurance_applies_if_max_kg":       { "value": "100",  "clause": "3.9.4.3" },
+    "absolute_humidity_limit_g_m3":      { "value": "20",   "clause": "NMI P108 [M]" }
+  }
+}
