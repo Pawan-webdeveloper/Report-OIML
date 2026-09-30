@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -6,7 +7,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .core.config import get_settings
-from .core.db import Base, engine
+from .core.db import Base, SessionLocal, engine
 from .routers import (attachments, audit, auth, calc, dashboard, equipment,
                       evaluations, instruments, parties, reports, rulesets,
                       tests, users)
@@ -14,31 +15,37 @@ from .routers import (attachments, audit, auth, calc, dashboard, equipment,
 settings = get_settings()
 PUBLIC_DIR = Path(__file__).resolve().parent.parent / "public"
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: create database tables and seed if empty
+    import app.models  # noqa: F401 — register all models
+    Base.metadata.create_all(engine)
+
+    from .models import User
+    db = SessionLocal()
+    try:
+        if db.query(User).count() == 0:
+            import os
+            import subprocess
+            import sys
+            seed_path = Path(__file__).resolve().parent.parent / "seed.py"
+            if seed_path.exists():
+                subprocess.run([sys.executable, str(seed_path)], check=True)
+    except Exception as e:
+        print(f"Warning: Database seeding failed: {e}")
+    finally:
+        db.close()
+
+    yield
+
+
 app = FastAPI(
     title=settings.APP_NAME,
     version="0.5.0",
     docs_url="/docs",
+    lifespan=lifespan,
 )
-
-
-@app.on_event("startup")
-def init_db():
-    """Create database tables and seed if empty (for deployments without migrations)."""
-    import app.models  # noqa: F401 — register all models
-
-    Base.metadata.create_all(engine)
-
-    from .models import User
-    from .core.db import SessionLocal
-
-    db = SessionLocal()
-    try:
-        if db.query(User).count() == 0:
-            import subprocess
-            import sys
-            subprocess.run([sys.executable, "seed.py"], check=True)
-    finally:
-        db.close()
 
 _cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(
