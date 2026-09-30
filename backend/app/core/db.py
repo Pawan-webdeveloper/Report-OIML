@@ -5,6 +5,15 @@ from .config import get_settings
 
 settings = get_settings()
 
+# Ensure the directory exists for SQLite databases (e.g. on Render persistent disk)
+if settings.DATABASE_URL.startswith("sqlite"):
+    from pathlib import Path
+
+    db_path_str = settings.DATABASE_URL.replace("sqlite:///", "", 1)
+    if db_path_str:
+        db_dir = Path(db_path_str).parent
+        db_dir.mkdir(parents=True, exist_ok=True)
+
 # This flag is required for SQLite with FastAPI threads
 _connect_args = (
     {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
