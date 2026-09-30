@@ -7,19 +7,19 @@ services:
     branch: feat/backend-setup
     rootDir: backend
     buildCommand: pip install -r requirements.txt && cd ../frontend && npm ci && npm run build:backend
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: ./render-start.sh
     envVars:
       - key: DATABASE_URL
-        value: sqlite:///./data.db
+        value: sqlite:////opt/render/project/data/data.db
       - key: SECRET_KEY
         generateValue: true
       - key: ALLOW_ANY_LOGIN
         value: "true"
       - key: UPLOAD_DIR
-        value: ./uploads
+        value: /opt/render/project/data/uploads
       - key: PYTHON_VERSION
         value: 3.12.0
     disk:
-      name: uploads
-      mountPath: /opt/render/project/src/backend/uploads
+      name: app-data
+      mountPath: /opt/render/project/data
       sizeGB: 1
