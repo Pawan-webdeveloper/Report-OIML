@@ -38,8 +38,7 @@
       print-color-adjust: exact;
     }
     .toolbar {
-      position: sticky;
-      top: 0;
+      position: relative;
       z-index: 10;
       display: flex;
       align-items: center;
@@ -68,12 +67,11 @@
       min-height: 297mm;
       margin: 18px auto;
       padding: 14mm 12mm 16mm;
-      overflow: hidden;
       background: white;
       box-shadow: 0 8px 32px rgb(15 23 42 / 14%);
     }
     .watermark {
-      position: fixed;
+      position: absolute;
       top: 43%;
       left: 13%;
       z-index: 0;
@@ -173,7 +171,7 @@
     .warnings h3 { margin-top: 0; color: var(--warn); }
     .warnings ul { margin: 0; padding-left: 5mm; }
 
-    .summary { break-before: page; page-break-before: always; }
+    .summary { margin-top: 8mm; }
     .outcome {
       display: flex;
       align-items: center;
@@ -202,7 +200,7 @@
     @media print {
       html, body { background: white; }
       .toolbar { display: none !important; }
-      .report { width: auto; min-height: 0; margin: 0; padding: 0; overflow: visible; box-shadow: none; }
+      .report { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
       a { color: inherit; text-decoration: none; }
       h2, h3 { break-after: avoid; page-break-after: avoid; }
       table, .meta-grid, .warnings, .outcome, .approval { break-inside: avoid; page-break-inside: avoid; }
@@ -295,6 +293,8 @@
         <div><dt>Resolution during test</dt><dd>{{ conditions.resolution_during_test }}</dd></div>
         <div><dt>Evaluation period</dt><dd>{{ conditions.period }}</dd></div>
         <div><dt>Rule set</dt><dd>{{ conditions.ruleset_id }}</dd></div>
+      </dl>
+      <dl class="meta-grid" style="margin-top: -1px;">
         <div style="grid-column: 1 / -1"><dt>Rule set SHA-256</dt><dd class="hash">{{ conditions.ruleset_sha256 }}</dd></div>
       </dl>
     </section>

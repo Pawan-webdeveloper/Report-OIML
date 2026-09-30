@@ -5,8 +5,27 @@ an OPTIONAL dependency (install in Docker/WSL). Returns None when unavailable
 """
 from __future__ import annotations
 
+import os
+import sys
+from pathlib import Path
+
+
+def _configure_native_libraries() -> None:
+    """Let macOS Python processes find Homebrew's Pango/GLib libraries."""
+    if sys.platform != "darwin":
+        return
+    homebrew_lib = Path("/opt/homebrew/lib")
+    if homebrew_lib.is_dir():
+        current = os.environ.get("DYLD_FALLBACK_LIBRARY_PATH", "")
+        paths = [p for p in current.split(":") if p]
+        if str(homebrew_lib) not in paths:
+            os.environ["DYLD_FALLBACK_LIBRARY_PATH"] = ":".join(
+                [str(homebrew_lib), *paths]
+            )
+
 
 def weasyprint_available() -> bool:
+    _configure_native_libraries()
     try:
         import weasyprint  # noqa: F401
         return True
@@ -15,6 +34,7 @@ def weasyprint_available() -> bool:
 
 
 def render_pdf(html: str) -> bytes | None:
+    _configure_native_libraries()
     try:
         from weasyprint import HTML
     except Exception:
