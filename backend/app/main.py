@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .core.config import get_settings
+from .core.db import Base, engine
 from .routers import (attachments, audit, auth, calc, dashboard, equipment,
                       evaluations, instruments, parties, reports, rulesets,
                       tests, users)
@@ -18,6 +19,26 @@ app = FastAPI(
     version="0.5.0",
     docs_url="/docs",
 )
+
+
+@app.on_event("startup")
+def init_db():
+    """Create database tables and seed if empty (for deployments without migrations)."""
+    import app.models  # noqa: F401 — register all models
+
+    Base.metadata.create_all(engine)
+
+    from .models import User
+    from .core.db import SessionLocal
+
+    db = SessionLocal()
+    try:
+        if db.query(User).count() == 0:
+            import subprocess
+            import sys
+            subprocess.run([sys.executable, "seed.py"], check=True)
+    finally:
+        db.close()
 
 _cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(
