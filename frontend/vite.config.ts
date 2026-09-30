@@ -6,6 +6,12 @@ import { defineConfig } from 'vite'
 // Tailwind runs via postcss.config.js (tailwindcss v3).
 export default defineConfig({
   plugins: [react()],
+  // Default `npm run build` → frontend/dist. `npm run build:backend` writes
+  // into ../backend/public (outside this project root), so emptyOutDir must
+  // be allowed or Vite will refuse to wipe that folder.
+  build: {
+    emptyOutDir: true,
+  },
   server: {
     proxy: {
       '/api': {

@@ -13,7 +13,7 @@ const TITLES: [RegExp, string][] = [
   [/^\/tests/, 'Test Entry'],
   [/^\/reports/, 'Reports'],
   [/^\/admin\/users/, 'User Management'],
-    [/^\/rulesets/, 'Rule Sets (OIML R 76)'],
+  [/^\/rulesets/, 'Rule Sets (OIML R 76)'],
   [/^\/audit/, 'Audit Log'],
 ];
 
@@ -34,17 +34,20 @@ export default function Header() {
   }
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm md:px-6">
-      <h1 className="text-base font-semibold text-slate-800">{pageTitle(pathname)}</h1>
+    <header className="flex min-h-16 items-center justify-between border-b border-slate-200 bg-white px-4 md:px-6 lg:px-8">
+      <div className="min-w-0">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-700">OIML R 76</p>
+        <h1 className="truncate text-base font-semibold tracking-tight text-slate-900">{pageTitle(pathname)}</h1>
+      </div>
 
       {user && (
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <p className="text-sm font-medium text-slate-800">{user.full_name}</p>
-            <p className="text-xs text-slate-500">@{user.username}</p>
+        <div className="ml-4 flex items-center gap-2 sm:gap-3">
+          <div className="hidden text-right sm:block">
+            <p className="max-w-40 truncate text-sm font-medium text-slate-800">{user.full_name}</p>
+            <p className="font-mono text-[11px] text-slate-500">@{user.username}</p>
           </div>
-          <Badge label={titleCase(user.role)} className={ROLE_STYLES[user.role]} />
-          <Button variant="ghost" onClick={onLogout} title="Log out" className="!px-2">
+          <Badge label={titleCase(user.role)} className={`${ROLE_STYLES[user.role]} hidden sm:inline-flex`} />
+          <Button variant="ghost" onClick={onLogout} title="Log out" aria-label="Log out" className="!px-2.5">
             <IconLogout />
           </Button>
         </div>

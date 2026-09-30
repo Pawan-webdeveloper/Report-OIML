@@ -15,7 +15,17 @@ venv/
 uploads/
 *.log
 
+# Vite production bundle copied by `npm run build:backend`
+backend/public/**
+!backend/public/.gitkeep
+
 # OS / IDE
 .DS_Store
 .idea/
 .vscode/
+
+# Local tooling / scratch
+artifacts/
+.agents/
+.claude/
+.commandcode/

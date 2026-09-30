@@ -14,16 +14,17 @@ export default function StatusStepper({ status }: { status: EvalStatus }) {
   const idx = returned ? 1 : STEPS.findIndex((s) => s.key === status);
 
   return (
-    <ol className="flex flex-wrap items-center gap-1 text-xs">
+    <ol aria-label="Evaluation status" className="flex flex-wrap items-center gap-y-2 text-xs">
       {STEPS.map((s, i) => {
         const done = i < idx || (archived && i === 4);
         const current = i === idx && !archived;
         const failed = returned && i === 1;
         return (
-          <li key={s.key} className="flex items-center gap-1">
-            {i > 0 && <span className="mx-1 text-slate-300">→</span>}
+          <li key={s.key} className="flex items-center">
+            {i > 0 && <span className={`mx-1 h-px w-3 ${done || current ? 'bg-primary-400' : 'bg-slate-300'}`} aria-hidden />}
             <span
-              className={`rounded-full px-2.5 py-1 font-medium ring-1 ring-inset ${
+              aria-current={current ? 'step' : undefined}
+              className={`rounded px-2.5 py-1 font-semibold ring-1 ring-inset ${
                 failed
                   ? 'bg-red-100 text-red-700 ring-red-300'
                   : current
@@ -34,13 +35,13 @@ export default function StatusStepper({ status }: { status: EvalStatus }) {
               }`}
             >
               {s.label}
-              {failed && ' ↩'}
+              {failed && ' · Returned'}
             </span>
           </li>
         );
       })}
       {archived && (
-        <span className="ml-2 rounded-full bg-slate-200 px-2.5 py-1 font-medium text-slate-600">
+        <span className="ml-2 rounded bg-slate-200 px-2.5 py-1 font-semibold text-slate-600">
           Archived
         </span>
       )}

@@ -21,8 +21,8 @@ export default function JsonFallbackForm({ existing, readOnly, onSubmit }: TestF
   }
 
   return (
-    <div className="space-y-3">
-      <p className="rounded-lg bg-amber-50 px-4 py-3 text-xs text-amber-800 ring-1 ring-inset ring-amber-200">
+    <div className="space-y-4">
+      <p className="border-l-4 border-amber-500 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
         Advanced mode — raw observation JSON for this test page. The engine applies the same
         validation and pass/fail rules server-side. Structured forms for this test arrive in a
         later iteration.
@@ -33,10 +33,11 @@ export default function JsonFallbackForm({ existing, readOnly, onSubmit }: TestF
         disabled={readOnly}
         rows={14}
         spellCheck={false}
-        className="w-full rounded-lg border border-slate-300 p-3 font-mono text-xs disabled:bg-slate-100"
+        aria-label="Raw observation JSON"
+        className="w-full rounded-lg border border-slate-300 bg-slate-950 p-4 font-mono text-sm leading-6 text-slate-100 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 disabled:bg-slate-100 disabled:text-slate-500"
       />
-      {localError && <p className="text-sm text-red-600">{localError}</p>}
-      {!readOnly && <Button onClick={save} loading={busy}>Save test page (JSON)</Button>}
+      {localError && <p role="alert" className="border-l-4 border-red-600 bg-red-50 px-4 py-3 text-sm text-red-800">{localError}</p>}
+      {!readOnly && <Button className="min-h-12" onClick={save} loading={busy}>Save test page (JSON)</Button>}
     </div>
   );
 }

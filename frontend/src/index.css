@@ -5,8 +5,49 @@
 @layer base {
   html {
     @apply antialiased;
+    color-scheme: light;
   }
+
   body {
-    @apply bg-slate-100 font-sans text-slate-800;
+    @apply m-0 min-w-[320px] bg-slate-100 font-sans text-slate-800;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    @apply bg-primary-200 text-primary-950;
+  }
+
+  :focus-visible {
+    outline: 2px solid theme('colors.primary.600');
+    outline-offset: 2px;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+  }
+
+  input[type='number'],
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
   }
 }

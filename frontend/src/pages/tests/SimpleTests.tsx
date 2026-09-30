@@ -27,27 +27,27 @@ export function ZeroReturnForm({ instrument, engineInst, resolutionG, existing, 
   }, [P0, P30, engineInst, resolutionG]);
 
   const block = (label: string, val: { L: string; I: string; dL: string }, set: (v: { L: string; I: string; dL: string }) => void) => (
-    <div>
+    <section className="min-w-0 border border-slate-200 p-4">
       <p className="mb-2 text-sm font-semibold text-slate-700">{label}</p>
-      <div className="flex gap-3">
+       <div className="grid grid-cols-3 gap-2">
         {(['L', 'I', 'dL'] as const).map((f) => (
           <label key={f} className="text-xs text-slate-600">
             {f}
             <input value={val[f]} disabled={readOnly} inputMode="decimal"
               onChange={(e) => set({ ...val, [f]: e.target.value })}
-              className="mt-1 block w-24 rounded border border-slate-300 px-2 py-1 text-right font-mono text-sm disabled:bg-slate-100" />
+               className="mt-1 block min-h-11 w-full rounded-md border border-slate-300 px-2 text-right font-mono text-sm tabular-nums outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 disabled:bg-slate-100" />
           </label>
         ))}
       </div>
-    </div>
+    </section>
   );
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg bg-slate-50 px-4 py-3 text-sm ring-1 ring-inset ring-slate-200">
+      <div className="border-l-4 border-slate-700 bg-slate-50 px-4 py-3 text-sm">
         Pass: |P₃₀ − P₀| ≤ 0.5 e₁ (A.4.11.2)
       </div>
-      <div className="flex flex-wrap gap-8">
+      <div className="grid gap-4 lg:grid-cols-2">
         {block('P₀ (before 30-min load)', P0, setP0)}
         {block('P₃₀ (after load removed)', P30, setP30)}
       </div>
@@ -59,7 +59,7 @@ export function ZeroReturnForm({ instrument, engineInst, resolutionG, existing, 
         <PassFailBadge pass={live?.pass ?? null} />
       </p>
       {!readOnly && (
-        <Button loading={busy} onClick={async () => { setBusy(true); try { await onSubmit({ P0, P30 }); } finally { setBusy(false); } }}>
+        <Button className="min-h-12" loading={busy} onClick={async () => { setBusy(true); try { await onSubmit({ P0, P30 }); } finally { setBusy(false); } }}>
           Save zero-return test
         </Button>
       )}
@@ -118,31 +118,32 @@ export function CreepForm({ instrument, engineInst, resolutionG, mpeContext, exi
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-4">
+      <div className="flex flex-wrap items-end gap-4 border-l-4 border-slate-700 bg-slate-50 px-4 py-3">
         <label className="text-xs text-slate-600">
           Load ({unit})
           <input value={load} disabled={readOnly} inputMode="decimal" onChange={(e) => setLoad(e.target.value)}
-            className="mt-1 block w-32 rounded border border-slate-300 px-2 py-1 text-right font-mono text-sm disabled:bg-slate-100" />
+             className="mt-1 block min-h-11 w-32 rounded-md border border-slate-300 px-2 text-right font-mono text-sm tabular-nums outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 disabled:bg-slate-100" />
         </label>
         <span className="text-sm">{live?.mode ?? '—'}</span>
         <span className="ml-auto"><PassFailBadge pass={live?.pass ?? null} /></span>
       </div>
-      <table className="w-full max-w-xl text-sm">
+      <div className="overflow-x-auto border border-slate-300">
+      <table className="min-w-[36rem] w-full text-sm">
         <thead className="bg-slate-50 text-xs uppercase text-slate-500">
           <tr><th className="px-2 py-1 text-left">t (min)</th><th className="px-2 py-1 text-left">I</th><th className="px-2 py-1 text-left">ΔL</th><th className="px-2 py-1 text-left">ΔP</th></tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
           {readings.map((r, i) => (
-            <tr key={i}>
+             <tr key={i} className="hover:bg-slate-50/70">
               <td className="px-2 py-1"><input value={r.t_min} disabled={readOnly} inputMode="decimal"
                 onChange={(e) => setReadings(readings.map((x, j) => (j === i ? { ...x, t_min: e.target.value } : x)))}
-                className="w-20 rounded border border-slate-300 px-2 py-1 text-right font-mono text-sm disabled:bg-slate-100" /></td>
+                 className="min-h-11 w-20 rounded-md border border-slate-300 px-2 text-right font-mono text-sm tabular-nums outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 disabled:bg-slate-100" /></td>
               <td className="px-2 py-1"><input value={r.I} disabled={readOnly} inputMode="decimal"
                 onChange={(e) => setReadings(readings.map((x, j) => (j === i ? { ...x, I: e.target.value } : x)))}
-                className="w-28 rounded border border-slate-300 px-2 py-1 text-right font-mono text-sm disabled:bg-slate-100" /></td>
+                 className="min-h-11 w-28 rounded-md border border-slate-300 px-2 text-right font-mono text-sm tabular-nums outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 disabled:bg-slate-100" /></td>
               <td className="px-2 py-1"><input value={r.dL} disabled={readOnly} inputMode="decimal"
                 onChange={(e) => setReadings(readings.map((x, j) => (j === i ? { ...x, dL: e.target.value } : x)))}
-                className="w-24 rounded border border-slate-300 px-2 py-1 text-right font-mono text-sm disabled:bg-slate-100" /></td>
+                 className="min-h-11 w-24 rounded-md border border-slate-300 px-2 text-right font-mono text-sm tabular-nums outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 disabled:bg-slate-100" /></td>
               <td className="px-2 py-1 text-right font-mono text-slate-600">
                 {live?.rows?.[i] ? `${fmtU(live.rows[i].dP, unit)} (limit ${fmtU(live.aLim, unit)})` : '—'}
               </td>
@@ -150,12 +151,13 @@ export function CreepForm({ instrument, engineInst, resolutionG, mpeContext, exi
           ))}
         </tbody>
       </table>
+      </div>
       {!readOnly && (
-        <div className="flex gap-3">
-          <Button loading={busy} onClick={async () => { setBusy(true); try { await onSubmit({ load, readings }); } finally { setBusy(false); } }}>
+        <div className="sticky bottom-0 z-10 -mx-5 flex flex-wrap gap-3 border-t border-slate-300 bg-white/95 px-5 py-3 backdrop-blur">
+          <Button className="min-h-12" loading={busy} onClick={async () => { setBusy(true); try { await onSubmit({ load, readings }); } finally { setBusy(false); } }}>
             Save creep test
           </Button>
-          <Button variant="secondary" onClick={() => setReadings([...readings, { t_min: '', I: '', dL: '' }])}>+ Add reading</Button>
+          <Button className="min-h-12" variant="secondary" onClick={() => setReadings([...readings, { t_min: '', I: '', dL: '' }])}>Add reading</Button>
         </div>
       )}
     </div>

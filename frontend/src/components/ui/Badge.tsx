@@ -4,8 +4,8 @@ import { OUTCOME_STYLES, STATUS_STYLES, titleCase } from '../../lib/status';
 export function Badge({ label, className = '' }: { label: string; className?: string }) {
   return (
     <span
-      className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs
-        font-medium ring-1 ring-inset ${
+      className={`inline-flex items-center whitespace-nowrap rounded px-2 py-1 text-[11px]
+        font-semibold leading-none ring-1 ring-inset ${
           className || 'bg-slate-100 text-slate-700 ring-slate-300'
         }`}
     >

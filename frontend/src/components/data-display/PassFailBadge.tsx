@@ -1,18 +1,18 @@
 export function PassFailBadge({ pass }: { pass: boolean | null }) {
   if (pass === null) {
     return (
-      <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 ring-1 ring-inset ring-slate-300">
+      <span className="inline-flex items-center rounded bg-slate-100 px-2 py-1 text-[11px] font-semibold leading-none text-slate-500 ring-1 ring-inset ring-slate-300">
         —
       </span>
     );
   }
   return pass ? (
-    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-300">
-      ✓ Pass
+    <span className="inline-flex items-center gap-1.5 rounded bg-emerald-100 px-2 py-1 text-[11px] font-semibold leading-none text-emerald-900 ring-1 ring-inset ring-emerald-300">
+      <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" aria-hidden /> Pass
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800 ring-1 ring-inset ring-red-300">
-      ✗ Fail
+    <span className="inline-flex items-center gap-1.5 rounded bg-red-100 px-2 py-1 text-[11px] font-semibold leading-none text-red-900 ring-1 ring-inset ring-red-300">
+      <span className="h-1.5 w-1.5 rounded-full bg-red-600" aria-hidden /> Fail
     </span>
   );
 }
@@ -27,7 +27,7 @@ export function VerdictBadge({ verdict }: { verdict: string | null | undefined }
   };
   return (
     <span
-      className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${
+      className={`inline-flex items-center whitespace-nowrap rounded px-2 py-1 text-[11px] font-semibold leading-none ring-1 ring-inset ${
         map[verdict] ?? map.PENDING
       }`}
     >

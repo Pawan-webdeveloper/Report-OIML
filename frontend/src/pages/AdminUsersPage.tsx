@@ -11,9 +11,16 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
-import { ROLE_STYLES, titleCase } from '../lib/status';
+import { titleCase } from '../lib/status';
 
 const ROLES: Role[] = ['ADMIN', 'ENGINEER', 'REVIEWER', 'VIEWER'];
+
+const ROLE_STYLES: Record<Role, string> = {
+  ADMIN: 'bg-teal-50 text-teal-800 ring-teal-200',
+  ENGINEER: 'bg-slate-100 text-slate-800 ring-slate-300',
+  REVIEWER: 'bg-slate-100 text-slate-800 ring-slate-300',
+  VIEWER: 'bg-slate-100 text-slate-700 ring-slate-300',
+};
 
 const EMPTY: UserInput = {
   username: '', full_name: '', email: '', password: '', role: 'VIEWER',
@@ -70,76 +77,111 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-teal-700">Access control</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">User administration</h1>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">Manage role-based access, account state, and credential recovery.</p>
+        </div>
+        <Button onClick={() => { setCreating(!creating); setEditing(null); }} aria-expanded={creating} aria-controls="create-user-form">
+          {creating ? 'Close form' : 'New user'}
+        </Button>
+      </header>
+
       <Card
-        title="User management (RBAC)"
-        actions={<Button onClick={() => { setCreating(!creating); setEditing(null); }}>
-          {creating ? 'Close' : '+ New user'}
-        </Button>}
+        title="Authorised users"
+        actions={<span className="text-xs tabular-nums text-slate-500">{users.data?.length ?? 0} accounts</span>}
       >
         {notice && (
-          <div className="mb-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800 ring-1 ring-inset ring-emerald-200">
+          <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
             {notice}
           </div>
         )}
         {error && (
-          <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-inset ring-red-200">
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
             {error}
           </div>
         )}
 
+        {users.error && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+            <p className="font-semibold">User directory could not be loaded</p>
+            <p className="mt-1 text-xs">{users.error}</p>
+            <Button variant="secondary" className="mt-3" onClick={users.reload}>Retry</Button>
+          </div>
+        )}
+
         {creating && (
-          <form onSubmit={submitCreate} className="mb-6 grid grid-cols-1 gap-3 rounded-lg bg-slate-50 p-4 md:grid-cols-3">
-            <Input label="Username *" value={form.username}
-              onChange={(e) => setForm({ ...form, username: e.target.value })} required />
-            <Input label="Full name *" value={form.full_name}
-              onChange={(e) => setForm({ ...form, full_name: e.target.value })} required />
-            <Input label="Email *" type="email" value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-            <Input label="Initial password *" value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              hint="Min 8 chars, letter + digit — user must change it at first login" required />
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Role *</label>
-              <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}
-                className="block w-full rounded-lg border-0 px-3 py-2 text-sm shadow-sm ring-1 ring-inset ring-slate-300">
-                {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-              </select>
+          <form id="create-user-form" onSubmit={submitCreate} className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="mb-4">
+              <h2 className="text-sm font-semibold text-slate-900">Create an account</h2>
+              <p className="mt-1 text-xs text-slate-500">The user must replace the initial password at first sign-in.</p>
             </div>
-            <div className="flex items-end">
-              <Button type="submit" loading={busy === 'create'} disabled={users.loading}>
-                Create user
-              </Button>
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+              <Input label="Username" value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value })} required />
+              <Input label="Full name" value={form.full_name}
+                onChange={(e) => setForm({ ...form, full_name: e.target.value })} required />
+              <Input label="Email address" type="email" value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+              <Input label="Initial password" type="password" autoComplete="new-password" value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                hint="At least 8 characters with one letter and one digit" required />
+              <div>
+                <label htmlFor="create-role" className="mb-1 block text-sm font-medium text-slate-700">Role</label>
+                <select id="create-role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role })}
+                  className="block w-full rounded-lg border-0 bg-white px-3 py-2 text-sm shadow-sm ring-1 ring-inset ring-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-600">
+                  {ROLES.map((r) => <option key={r} value={r}>{titleCase(r)}</option>)}
+                </select>
+              </div>
+              <div className="flex items-end gap-2">
+                <Button type="submit" loading={busy === 'create'} disabled={users.loading}>Create user</Button>
+                <Button variant="secondary" onClick={() => setCreating(false)}>Cancel</Button>
+              </div>
             </div>
           </form>
         )}
 
-        {users.loading && <p className="text-sm text-slate-500">Loading…</p>}
-        {users.data && (
+        {users.loading && (
+          <div className="space-y-2" aria-label="Loading user directory">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="h-12 animate-pulse rounded-md bg-slate-100 motion-reduce:animate-none" />
+            ))}
+          </div>
+        )}
+        {!users.loading && !users.error && users.data && users.data.length === 0 && (
+          <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center">
+            <p className="text-sm font-semibold text-slate-800">No user accounts found</p>
+            <p className="mt-1 text-xs text-slate-500">Create an account to grant controlled access.</p>
+          </div>
+        )}
+        {!users.loading && !users.error && users.data && users.data.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-[900px] text-left text-sm">
+              <caption className="sr-only">Authorised user accounts and access roles</caption>
               <thead>
-                <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
-                  <th className="py-2 pr-4">Username</th>
-                  <th className="py-2 pr-4">Name</th>
-                  <th className="py-2 pr-4">Email</th>
-                  <th className="py-2 pr-4">Role</th>
-                  <th className="py-2 pr-4">State</th>
-                  <th className="py-2 text-right">Actions</th>
+                <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] uppercase tracking-[0.08em] text-slate-500">
+                  <th scope="col" className="px-3 py-2.5 font-semibold">Username</th>
+                  <th scope="col" className="px-3 py-2.5 font-semibold">Name</th>
+                  <th scope="col" className="px-3 py-2.5 font-semibold">Email</th>
+                  <th scope="col" className="px-3 py-2.5 font-semibold">Role</th>
+                  <th scope="col" className="px-3 py-2.5 font-semibold">Account state</th>
+                  <th scope="col" className="px-3 py-2.5 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {users.data.map((u) => (
-                  <tr key={u.id} className="hover:bg-slate-50">
-                    <td className="py-2 pr-4 font-medium">
-                      @{u.username}{me?.id === u.id && <span className="ml-1 text-xs text-primary-600">(you)</span>}
+                  <tr key={u.id} className="transition-colors hover:bg-slate-50">
+                    <td className="px-3 py-3 font-semibold text-slate-900">
+                      @{u.username}{me?.id === u.id && <span className="ml-1 text-xs font-medium text-teal-700">Current user</span>}
                     </td>
-                    <td className="py-2 pr-4">{u.full_name}</td>
-                    <td className="py-2 pr-4 text-slate-600">{u.email}</td>
-                    <td className="py-2 pr-4">
+                    <td className="px-3 py-3 text-slate-700">{u.full_name}</td>
+                    <td className="px-3 py-3 text-slate-600">{u.email}</td>
+                    <td className="px-3 py-3">
                       <Badge label={titleCase(u.role)} className={ROLE_STYLES[u.role]} />
                     </td>
-                    <td className="py-2 pr-4 space-x-1">
+                    <td className="space-x-1 px-3 py-3">
                       <Badge label={u.is_active ? 'Active' : 'Disabled'}
                         className={u.is_active
                           ? 'bg-emerald-100 text-emerald-800 ring-emerald-300'
@@ -149,7 +191,7 @@ export default function AdminUsersPage() {
                           className="bg-amber-100 text-amber-800 ring-amber-300" />
                       )}
                     </td>
-                    <td className="py-2 text-right">
+                    <td className="px-3 py-3 text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="secondary" className="!px-2 !py-1"
                           onClick={() => { setEditing(u); setEdit({
@@ -174,29 +216,29 @@ export default function AdminUsersPage() {
       </Card>
 
       {editing && (
-        <Card title={`Edit — @${editing.username}`}>
-          <form onSubmit={submitEdit} className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <Card title={`Edit account · @${editing.username}`}>
+          <form onSubmit={submitEdit} className="grid grid-cols-1 gap-3 lg:grid-cols-3">
             <Input label="Full name" value={edit.full_name ?? ''}
               onChange={(e) => setEdit({ ...edit, full_name: e.target.value })} />
             <Input label="Email" type="email" value={edit.email ?? ''}
               onChange={(e) => setEdit({ ...edit, email: e.target.value })} />
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Role</label>
-              <select value={edit.role ?? editing.role}
+              <label htmlFor="edit-role" className="mb-1 block text-sm font-medium text-slate-700">Role</label>
+              <select id="edit-role" value={edit.role ?? editing.role}
                 onChange={(e) => setEdit({ ...edit, role: e.target.value as Role })}
-                className="block w-full rounded-lg border-0 px-3 py-2 text-sm shadow-sm ring-1 ring-inset ring-slate-300">
-                {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                className="block w-full rounded-lg border-0 bg-white px-3 py-2 text-sm shadow-sm ring-1 ring-inset ring-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-600">
+                {ROLES.map((r) => <option key={r} value={r}>{titleCase(r)}</option>)}
               </select>
             </div>
-            <Input label="Reset password (optional)" value={edit.new_password ?? ''}
+            <Input label="Reset password (optional)" type="password" autoComplete="new-password" value={edit.new_password ?? ''}
               onChange={(e) => setEdit({ ...edit, new_password: e.target.value })}
               hint="Leave blank to keep the current password" />
-            <label className="flex items-end gap-2 pb-2 text-sm">
-              <input type="checkbox" className="h-4 w-4"
+            <label className="flex items-center gap-2 self-end rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-600"
                 checked={edit.is_active ?? editing.is_active}
                 disabled={editing.id === me?.id}
                 onChange={(e) => setEdit({ ...edit, is_active: e.target.checked })} />
-              Active {editing.id === me?.id && '(cannot disable yourself)'}
+              Account active {editing.id === me?.id && '(current user cannot be disabled)'}
             </label>
             <div className="flex items-end gap-3">
               <Button type="submit" loading={busy === 'edit'}>Save changes</Button>

@@ -42,12 +42,16 @@ export default function ChangePasswordPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md">
+    <div className="mx-auto max-w-lg py-4">
+      <div className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary-700">Account security</p>
+        <p className="mt-2 text-sm leading-6 text-slate-600">Choose a password used only for this laboratory console.</p>
+      </div>
       <Card title={user?.must_change_password ? 'Set a new password (required)' : 'Change password'}>
         {done ? (
-          <div className="space-y-4 text-center">
-            <p className="text-4xl">✅</p>
-            <p className="text-sm text-slate-600">
+          <div className="space-y-4 py-3 text-center">
+            <p className="mx-auto w-fit rounded bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-inset ring-emerald-300">Password updated</p>
+            <p className="mx-auto max-w-sm text-sm leading-6 text-slate-600">
               Password updated successfully. You can continue to the dashboard.
             </p>
             <Button onClick={() => navigate('/', { replace: true })}>Go to Dashboard</Button>
@@ -80,7 +84,7 @@ export default function ChangePasswordPage() {
               required
             />
             {error && (
-              <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-inset ring-red-200">
+              <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-800">
                 {error}
               </div>
             )}

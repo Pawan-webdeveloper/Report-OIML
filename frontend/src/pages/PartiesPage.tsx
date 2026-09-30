@@ -8,8 +8,8 @@ import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
 
 const KIND_STYLE: Record<string, string> = {
-  MANUFACTURER: 'bg-blue-100 text-blue-800 ring-blue-300',
-  APPLICANT: 'bg-purple-100 text-purple-800 ring-purple-300',
+  MANUFACTURER: 'bg-teal-50 text-teal-800 ring-teal-200',
+  APPLICANT: 'bg-slate-100 text-slate-800 ring-slate-300',
   AGENT: 'bg-slate-100 text-slate-700 ring-slate-300',
 };
 
@@ -41,51 +41,85 @@ export default function PartiesPage() {
   }
 
   return (
-    <Card
-      title="Manufacturers & Applicants"
-      actions={<Button onClick={() => setOpen(!open)}>{open ? 'Close' : '+ New Party'}</Button>}
-    >
-      {open && (
-        <form onSubmit={submit} className="mb-6 grid grid-cols-1 gap-3 rounded-lg bg-slate-50 p-4 md:grid-cols-3">
-          <Input label="Name *" value={name} onChange={(e) => setName(e.target.value)} required />
-          <Input label="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
-          <Input label="GSTIN" value={gstin} onChange={(e) => setGstin(e.target.value)} />
-          <div className="md:col-span-3">
-            {formError && <p className="mb-2 text-sm text-red-600">{formError}</p>}
-            <Button type="submit" loading={busy}>Save party</Button>
-          </div>
-        </form>
-      )}
-
-      {loading && <p className="text-sm text-slate-500">Loading…</p>}
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {data && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
-                <th className="py-2 pr-4">Name</th>
-                <th className="py-2 pr-4">Kind</th>
-                <th className="py-2 pr-4">Address</th>
-                <th className="py-2 pr-4">GSTIN</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {data.map((p) => (
-                <tr key={p.id}>
-                  <td className="py-2 pr-4 font-medium">{p.name}</td>
-                  <td className="py-2 pr-4"><Badge label={p.kind} className={KIND_STYLE[p.kind]} /></td>
-                  <td className="py-2 pr-4 text-slate-600">{p.address ?? '—'}</td>
-                  <td className="py-2 pr-4 font-mono text-xs">{p.gstin ?? '—'}</td>
-                </tr>
-              ))}
-              {data.length === 0 && (
-                <tr><td colSpan={4} className="py-8 text-center text-slate-500">No parties yet — create one above.</td></tr>
-              )}
-            </tbody>
-          </table>
+    <div className="space-y-5">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-teal-700">Reference data</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Organisations</h1>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">Manufacturers, applicants, and authorised agents used in evaluation records.</p>
         </div>
-      )}
-    </Card>
+        <Button onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="new-party-form">
+          {open ? 'Close form' : 'New organisation'}
+        </Button>
+      </header>
+
+      <Card>
+        {open && (
+          <form id="new-party-form" onSubmit={submit} className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="mb-4">
+              <h2 className="text-sm font-semibold text-slate-900">Register a manufacturer</h2>
+              <p className="mt-1 text-xs text-slate-500">The organisation will be available to new evaluation reports.</p>
+            </div>
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+              <Input label="Organisation name" value={name} onChange={(e) => setName(e.target.value)} required />
+              <Input label="Registered address" value={address} onChange={(e) => setAddress(e.target.value)} />
+              <Input label="GSTIN" value={gstin} onChange={(e) => setGstin(e.target.value)} />
+            </div>
+            {formError && <p className="mt-3 text-sm text-red-700" role="alert">{formError}</p>}
+            <div className="mt-4 flex gap-2">
+              <Button type="submit" loading={busy}>Save organisation</Button>
+              <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
+            </div>
+          </form>
+        )}
+
+        {loading && (
+          <div className="space-y-2" aria-label="Loading organisations">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="h-12 animate-pulse rounded-md bg-slate-100 motion-reduce:animate-none" />
+            ))}
+          </div>
+        )}
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+            <p className="font-semibold">Organisation register could not be loaded</p>
+            <p className="mt-1 text-xs">{error}</p>
+            <Button variant="secondary" className="mt-3" onClick={reload}>Retry</Button>
+          </div>
+        )}
+        {!loading && !error && data && data.length === 0 && (
+          <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center">
+            <p className="text-sm font-semibold text-slate-800">No organisations registered</p>
+            <p className="mt-1 text-xs text-slate-500">Register the first manufacturer to use it in evaluations.</p>
+            {!open && <Button className="mt-4" onClick={() => setOpen(true)}>New organisation</Button>}
+          </div>
+        )}
+        {!loading && !error && data && data.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[700px] text-left text-sm">
+              <caption className="sr-only">Registered manufacturers, applicants, and agents</caption>
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] uppercase tracking-[0.08em] text-slate-500">
+                  <th scope="col" className="px-3 py-2.5 font-semibold">Organisation</th>
+                  <th scope="col" className="px-3 py-2.5 font-semibold">Type</th>
+                  <th scope="col" className="px-3 py-2.5 font-semibold">Registered address</th>
+                  <th scope="col" className="px-3 py-2.5 font-semibold">GSTIN</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {data.map((p) => (
+                  <tr key={p.id} className="transition-colors hover:bg-slate-50">
+                    <td className="px-3 py-3 font-semibold text-slate-900">{p.name}</td>
+                    <td className="px-3 py-3"><Badge label={p.kind.replaceAll('_', ' ')} className={KIND_STYLE[p.kind]} /></td>
+                    <td className="max-w-md px-3 py-3 text-slate-600">{p.address ?? '—'}</td>
+                    <td className="whitespace-nowrap px-3 py-3 font-mono text-xs text-slate-600">{p.gstin ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+    </div>
   );
 }

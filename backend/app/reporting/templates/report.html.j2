@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Type Evaluation Report {{ report_no }}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 14mm 12mm 16mm;
+      @bottom-center {
+        content: "{{ report_no }} · Page " counter(page) " of " counter(pages);
+        color: #64748b;
+        font: 8pt Arial, sans-serif;
+      }
+    }
+
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #5f6b7a;
+      --line: #cbd5e1;
+      --soft: #f1f5f9;
+      --accent: #0f766e;
+      --pass: #166534;
+      --fail: #b91c1c;
+      --warn: #92400e;
+    }
+
+    * { box-sizing: border-box; }
+    html { background: #e8edf2; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #e8edf2;
+      font: 10pt/1.42 Arial, Helvetica, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px max(16px, calc((100% - 210mm) / 2));
+      color: white;
+      background: #172033;
+      box-shadow: 0 2px 8px rgb(15 23 42 / 22%);
+    }
+    .toolbar strong { font-size: 9pt; letter-spacing: .05em; }
+    .toolbar button {
+      border: 1px solid #5eead4;
+      border-radius: 3px;
+      padding: 7px 14px;
+      color: white;
+      background: var(--accent);
+      font: 700 9pt Arial, sans-serif;
+      cursor: pointer;
+    }
+    .toolbar button:focus-visible { outline: 3px solid #99f6e4; outline-offset: 2px; }
+
+    .report {
+      position: relative;
+      width: 210mm;
+      min-height: 297mm;
+      margin: 18px auto;
+      padding: 14mm 12mm 16mm;
+      overflow: hidden;
+      background: white;
+      box-shadow: 0 8px 32px rgb(15 23 42 / 14%);
+    }
+    .watermark {
+      position: fixed;
+      top: 43%;
+      left: 13%;
+      z-index: 0;
+      color: rgb(185 28 28 / 8%);
+      font-size: 72pt;
+      font-weight: 800;
+      letter-spacing: .18em;
+      transform: rotate(-35deg);
+      pointer-events: none;
+    }
+    .report > :not(.watermark) { position: relative; z-index: 1; }
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10mm;
+      align-items: start;
+      padding-bottom: 7mm;
+      border-bottom: 2px solid var(--ink);
+    }
+    .eyebrow {
+      margin: 0 0 2mm;
+      color: var(--accent);
+      font-size: 8pt;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    h1 { margin: 0; font-size: 22pt; line-height: 1.08; letter-spacing: -.02em; }
+    .lab { margin: 3mm 0 0; color: var(--muted); }
+    .identity {
+      min-width: 52mm;
+      border-left: 1px solid var(--line);
+      padding-left: 5mm;
+    }
+    .identity span { display: block; color: var(--muted); font-size: 8pt; text-transform: uppercase; }
+    .identity strong { display: block; margin: 1mm 0 3mm; font-size: 12pt; overflow-wrap: anywhere; }
+    .status {
+      display: inline-block;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      padding: 1mm 2.5mm;
+      color: var(--accent);
+      font-size: 8pt;
+      font-weight: 700;
+      letter-spacing: .06em;
+    }
+
+    section { margin-top: 8mm; }
+    h2 {
+      margin: 0 0 3mm;
+      padding-bottom: 1.5mm;
+      border-bottom: 1px solid var(--ink);
+      font-size: 14pt;
+      line-height: 1.2;
+    }
+    h3 { margin: 5mm 0 2mm; font-size: 10.5pt; }
+    p { margin: 2mm 0; }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border-top: 1px solid var(--line);
+      border-left: 1px solid var(--line);
+    }
+    .meta-grid > div {
+      min-width: 0;
+      padding: 2mm 2.5mm;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .meta-grid dt { margin: 0 0 .5mm; color: var(--muted); font-size: 7.5pt; font-weight: 700; text-transform: uppercase; }
+    .meta-grid dd { margin: 0; overflow-wrap: anywhere; }
+
+    table { width: 100%; border-collapse: collapse; table-layout: auto; font-size: 8.5pt; }
+    th, td { border: 1px solid var(--line); padding: 1.7mm 2mm; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+    th { color: #334155; background: var(--soft); font-size: 7.5pt; letter-spacing: .02em; }
+    tr { break-inside: avoid; page-break-inside: avoid; }
+    .empty { padding: 3mm; color: var(--muted); border: 1px dashed var(--line); }
+
+    .form-page { break-before: page; page-break-before: always; }
+    .form-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 5mm; }
+    .form-meta { margin: -1mm 0 4mm; color: var(--muted); font-size: 8pt; }
+    .verdict {
+      flex: 0 0 auto;
+      border: 1px solid currentColor;
+      border-radius: 3px;
+      padding: 1.5mm 3mm;
+      font-size: 8pt;
+      font-weight: 800;
+      letter-spacing: .05em;
+    }
+    .is-pass { color: var(--pass); }
+    .is-fail { color: var(--fail); }
+    .is-pending, .is-incomplete { color: var(--warn); }
+    .note { border-left: 3px solid var(--accent); padding: 2mm 3mm; background: #f0fdfa; }
+    .raw-data { margin: 0; padding: 3mm; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--soft); font: 7.5pt/1.4 "Courier New", monospace; }
+    .warnings { margin: 4mm 0 0; padding: 3mm 4mm; border: 1px solid #fbbf24; background: #fffbeb; }
+    .warnings h3 { margin-top: 0; color: var(--warn); }
+    .warnings ul { margin: 0; padding-left: 5mm; }
+
+    .summary { break-before: page; page-break-before: always; }
+    .outcome {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 5mm;
+      margin-top: 4mm;
+      padding: 4mm;
+      border: 2px solid currentColor;
+      font-weight: 800;
+    }
+    .outcome strong { font-size: 16pt; }
+    .approval {
+      display: grid;
+      grid-template-columns: 1fr 28mm;
+      gap: 6mm;
+      align-items: start;
+    }
+    .hash { font: 7.5pt/1.45 "Courier New", monospace; overflow-wrap: anywhere; word-break: break-all; }
+    .qr { width: 28mm; height: 28mm; object-fit: contain; image-rendering: crisp-edges; }
+    .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4mm; }
+    figure { margin: 0; break-inside: avoid; page-break-inside: avoid; }
+    figure img { display: block; width: 100%; max-height: 80mm; object-fit: contain; border: 1px solid var(--line); }
+    figcaption { padding-top: 1mm; color: var(--muted); font-size: 8pt; }
+    footer { margin-top: 8mm; padding-top: 3mm; border-top: 1px solid var(--line); color: var(--muted); font-size: 7.5pt; }
+
+    @media print {
+      html, body { background: white; }
+      .toolbar { display: none !important; }
+      .report { width: auto; min-height: 0; margin: 0; padding: 0; overflow: visible; box-shadow: none; }
+      a { color: inherit; text-decoration: none; }
+      h2, h3 { break-after: avoid; page-break-after: avoid; }
+      table, .meta-grid, .warnings, .outcome, .approval { break-inside: avoid; page-break-inside: avoid; }
+    }
+
+    @media screen and (max-width: 820px) {
+      .report { width: calc(100% - 20px); min-height: 0; padding: 24px; }
+      header, .approval { grid-template-columns: 1fr; }
+      .identity { border-left: 0; border-top: 1px solid var(--line); padding: 4mm 0 0; }
+      .meta-grid { grid-template-columns: 1fr; }
+      .toolbar { padding-inline: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar" role="toolbar" aria-label="Report actions">
+    <strong>{{ report_no }}</strong>
+    <button type="button" onclick="window.print()">Print / Save PDF</button>
+  </div>
+
+  <main class="report">
+    {% if status not in ['APPROVED', 'ARCHIVED'] %}
+      <div class="watermark" aria-hidden="true">DRAFT</div>
+    {% endif %}
+
+    <header>
+      <div>
+        <p class="eyebrow">OIML R 76 · Non-automatic weighing instruments</p>
+        <h1>TYPE EVALUATION REPORT</h1>
+        <p class="lab"><strong>{{ laboratory.name }}</strong><br>{{ laboratory.address }}<br>Accreditation: {{ laboratory.accreditation_no }}</p>
+      </div>
+      <div class="identity">
+        <span>Report number</span>
+        <strong>{{ report_no }}</strong>
+        <span>Document status</span>
+        <b class="status">{{ status }}</b>
+      </div>
+    </header>
+
+    <section aria-labelledby="instrument-heading">
+      <h2 id="instrument-heading">1. Instrument identity</h2>
+      <dl class="meta-grid">
+        <div><dt>Application no.</dt><dd>{{ instrument.application_no }}</dd></div>
+        <div><dt>Type designation</dt><dd>{{ instrument.type_designation }}</dd></div>
+        <div><dt>Manufacturer</dt><dd>{{ instrument.manufacturer }}</dd></div>
+        <div><dt>Category</dt><dd>{{ instrument.category }}</dd></div>
+        <div><dt>Accuracy class</dt><dd>{{ instrument.accuracy_class }}</dd></div>
+        <div><dt>Indication type</dt><dd>{{ instrument.indication_type }}</dd></div>
+        <div><dt>Display</dt><dd>{{ instrument.display_kind }}</dd></div>
+        <div><dt>Range kind</dt><dd>{{ instrument.range_kind }}</dd></div>
+        <div><dt>Minimum capacity</dt><dd>{{ instrument.min_capacity }}</dd></div>
+        <div><dt>Maximum safe load</dt><dd>{{ instrument.max_safe_load }}</dd></div>
+        <div><dt>Tare (+ / −)</dt><dd>{{ instrument.tare_plus }} / {{ instrument.tare_minus }}</dd></div>
+        <div><dt>Power supply</dt><dd>{{ instrument.power_supply }}</dd></div>
+        <div><dt>Temperature limits</dt><dd>{{ instrument.temp_limits }}</dd></div>
+        <div><dt>Printer</dt><dd>{{ instrument.printer }}</dd></div>
+        <div><dt>Software version</dt><dd>{{ instrument.software_version }}</dd></div>
+        <div><dt>Submitted serial no.</dt><dd>{{ instrument.submitted_serial }}</dd></div>
+      </dl>
+    </section>
+
+    <section aria-labelledby="ranges-heading">
+      <h2 id="ranges-heading">2. Weighing ranges</h2>
+      {% if ranges %}
+        <table>
+          <thead><tr><th>Range</th><th>Verification interval (e)</th><th>Scale interval (d)</th><th>Maximum capacity</th><th>n = Max/e</th></tr></thead>
+          <tbody>
+            {% for row in ranges %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}
+          </tbody>
+        </table>
+      {% else %}<p class="empty">No weighing ranges recorded.</p>{% endif %}
+    </section>
+
+    <section aria-labelledby="equipment-heading">
+      <h2 id="equipment-heading">3. Test equipment and traceability</h2>
+      {% if equipment %}
+        <table>
+          <thead><tr><th>Kind</th><th>Name</th><th>Serial no.</th><th>Class / uncertainty</th><th>Certificate</th></tr></thead>
+          <tbody>{% for row in equipment %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+        </table>
+      {% else %}<p class="empty">No test equipment recorded.</p>{% endif %}
+    </section>
+
+    <section aria-labelledby="conditions-heading">
+      <h2 id="conditions-heading">4. Evaluation conditions</h2>
+      <dl class="meta-grid">
+        <div><dt>Purpose</dt><dd>{{ conditions.purpose }}</dd></div>
+        <div><dt>MPE context</dt><dd>{{ conditions.mpe_context }}</dd></div>
+        <div><dt>Automatic zero device</dt><dd>{{ conditions.auto_zero_status }}</dd></div>
+        <div><dt>Resolution during test</dt><dd>{{ conditions.resolution_during_test }}</dd></div>
+        <div><dt>Evaluation period</dt><dd>{{ conditions.period }}</dd></div>
+        <div><dt>Rule set</dt><dd>{{ conditions.ruleset_id }}</dd></div>
+        <div style="grid-column: 1 / -1"><dt>Rule set SHA-256</dt><dd class="hash">{{ conditions.ruleset_sha256 }}</dd></div>
+      </dl>
+    </section>
+
+    {% for page in pages %}
+      <section class="form-page" aria-labelledby="form-{{ loop.index }}">
+        <div class="form-head">
+          <h2 id="form-{{ loop.index }}">Form {{ page.form_no }}{% if page.instance_no and page.instance_no != 1 %} · Instance {{ page.instance_no }}{% endif %}</h2>
+          <span class="verdict is-{{ page.verdict|lower }}">{{ page.verdict }}</span>
+        </div>
+        {% if page.condition or page.date %}<p class="form-meta">{% if page.condition %}Condition: {{ page.condition }}{% endif %}{% if page.condition and page.date %} · {% endif %}{% if page.date %}Test date: {{ page.date }}{% endif %}</p>{% endif %}
+
+        {% for block in page.blocks %}
+          {% if block.type == 'kv' %}
+            <h3>{{ block.title }}</h3>
+            <table><tbody>{% for item in block['items'] %}<tr><th scope="row">{{ item[0] }}</th><td>{{ item[1] }}</td></tr>{% endfor %}</tbody></table>
+          {% elif block.type == 'table' %}
+            <h3>{{ block.title }}</h3>
+            <table>
+              <thead><tr>{% for column in block.columns %}<th scope="col">{{ column }}</th>{% endfor %}</tr></thead>
+              <tbody>{% for row in block.rows %}<tr>{% for cell in row %}<td>{{ '—' if cell is none or cell == '' else cell }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+            </table>
+          {% elif block.type == 'note' %}
+            <p class="note">{{ block.text }}</p>
+          {% elif block.type == 'json' %}
+            <pre class="raw-data">{{ block.data|tojson(indent=2) }}</pre>
+          {% endif %}
+        {% endfor %}
+
+        {% if page.warnings %}
+          <aside class="warnings" aria-label="Test warnings">
+            <h3>Warnings</h3>
+            <ul>{% for warning in page.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>
+          </aside>
+        {% endif %}
+      </section>
+    {% endfor %}
+
+    <section class="summary" aria-labelledby="summary-heading">
+      <h2 id="summary-heading">Conformity summary</h2>
+      {% if conformity %}
+        <table>
+          <thead><tr><th>Required test</th><th>Verdict</th></tr></thead>
+          <tbody>{% for row in conformity %}<tr><td>{{ row[0] }}</td><td class="is-{{ row[1]|lower }}"><strong>{{ row[1] }}</strong></td></tr>{% endfor %}</tbody>
+        </table>
+      {% else %}<p class="empty">No conformity results recorded.</p>{% endif %}
+      <div class="outcome is-{{ outcome|lower }}"><span>OVERALL OUTCOME</span><strong>{{ outcome }}</strong></div>
+    </section>
+
+    <section aria-labelledby="approval-heading">
+      <h2 id="approval-heading">Approval and integrity</h2>
+      <div class="approval">
+        <dl class="meta-grid">
+          <div><dt>Observer</dt><dd>{{ observer }}</dd></div>
+          <div><dt>Approver</dt><dd>{{ approver or 'Pending review' }}</dd></div>
+          <div><dt>Approved at</dt><dd>{{ approved_at or '—' }}</dd></div>
+          <div><dt>Approval state</dt><dd>{{ 'Approved' if approval_hash else 'Not approved' }}</dd></div>
+          <div style="grid-column: 1 / -1"><dt>Approval hash (SHA-256)</dt><dd class="hash">{{ approval_hash or '—' }}</dd></div>
+        </dl>
+        {% if qr %}<img class="qr" src="{{ qr }}" alt="QR code containing report identity and approval hash">{% endif %}
+      </div>
+    </section>
+
+    {% if photos %}
+      <section aria-labelledby="photos-heading">
+        <h2 id="photos-heading">Photographs</h2>
+        <div class="photo-grid">
+          {% for photo in photos %}<figure><img src="{{ photo.data_url }}" alt="{{ photo.caption }}"><figcaption>{{ photo.caption }}</figcaption></figure>{% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    {% if attachments %}
+      <section aria-labelledby="attachments-heading">
+        <h2 id="attachments-heading">Included attachments</h2>
+        <table>
+          <thead><tr><th>Kind</th><th>File</th><th>Caption</th><th>SHA-256 prefix</th></tr></thead>
+          <tbody>{% for row in attachments %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+        </table>
+      </section>
+    {% endif %}
+
+    <footer>{{ generated_note }} · Report {{ report_no }}</footer>
+  </main>
+</body>
+</html>

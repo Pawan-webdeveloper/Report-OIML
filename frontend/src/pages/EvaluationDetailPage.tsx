@@ -94,17 +94,23 @@ export default function EvaluationDetailPage() {
     (records.data ?? []).find((r) => r.kind === kind && r.instance_no === 1);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 pb-8">
+      <nav aria-label="Breadcrumb">
+        <Link to="/evaluations" className="inline-flex min-h-11 items-center text-sm font-medium text-primary-700 underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500">
+          Back to evaluations
+        </Link>
+      </nav>
       {/* Header */}
-      <Card>
+      <Card className="border-t-4 border-t-slate-800">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="font-mono text-sm font-semibold text-primary-700">{ev.report_no}</p>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary-700">Evaluation workspace</p>
+            <h1 className="mt-1 font-mono text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">{ev.report_no}</h1>
+            <p className="mt-2 text-sm text-slate-600">
               {inst ? `${inst.type_designation} · Class ${inst.accuracy_class}` : '…'} ·{' '}
               {ev.purpose.replaceAll('_', ' ')} · MPE {ev.mpe_context === 'IN_SERVICE' ? 'in service (2×)' : 'initial'}
             </p>
-            <p className="mt-0.5 text-xs text-slate-400">Created {fmtDateTime(ev.created_at)}</p>
+            <p className="mt-1 text-xs text-slate-500">Created {fmtDateTime(ev.created_at)}</p>
           </div>
           <div className="flex flex-col items-end gap-2">
             {ev.outcome && <OutcomeBadge outcome={ev.outcome} />}
@@ -115,47 +121,47 @@ export default function EvaluationDetailPage() {
             )}
           </div>
         </div>
-        <div className="mt-4 border-t border-slate-100 pt-4">
+        <div className="mt-5 overflow-x-auto border-t border-slate-200 pt-4">
           <StatusStepper status={ev.status} />
         </div>
       </Card>
 
       {actionError && (
-        <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-inset ring-red-200">
+        <div role="alert" className="border-l-4 border-red-600 bg-red-50 px-4 py-3 text-sm text-red-800">
           {actionError}
         </div>
       )}
 
       {/* Workflow actions */}
-      <Card title="Workflow">
+      <Card title="01 · Workflow control" className="border-l-4 border-l-slate-700">
         <div className="flex flex-wrap items-center gap-3">
           {role === 'ENGINEER' && ev.status === 'IN_PROGRESS' && (
-            <Button loading={busyAction === 'submit'} onClick={() => run('submit', () => submitEvaluation(id))}>
+            <Button className="min-h-12" loading={busyAction === 'submit'} onClick={() => run('submit', () => submitEvaluation(id))}>
               Submit for review
             </Button>
           )}
           {role === 'ENGINEER' && ev.status === 'RETURNED' && (
-            <Button loading={busyAction === 'reopen'} onClick={() => run('reopen', () => reopenEvaluation(id))}>
+            <Button className="min-h-12" loading={busyAction === 'reopen'} onClick={() => run('reopen', () => reopenEvaluation(id))}>
               Reopen (fix & rework)
             </Button>
           )}
           {role === 'REVIEWER' && ev.status === 'SUBMITTED' && (
-            <Button loading={busyAction === 'review'} onClick={() => run('review', () => startReview(id))}>
+            <Button className="min-h-12" loading={busyAction === 'review'} onClick={() => run('review', () => startReview(id))}>
               Start review
             </Button>
           )}
           {role === 'REVIEWER' && ev.status === 'UNDER_REVIEW' && (
             <>
-              <Button loading={busyAction === 'approve'} onClick={() => run('approve', () => approveEvaluation(id))}>
-                ✓ Approve
+              <Button className="min-h-12" loading={busyAction === 'approve'} onClick={() => run('approve', () => approveEvaluation(id))}>
+                Approve evaluation
               </Button>
-              <Button variant="secondary" onClick={() => setShowReturn(!showReturn)}>
-                ↩ Return with comments
+              <Button className="min-h-12" variant="secondary" onClick={() => setShowReturn(!showReturn)}>
+                Return with comments
               </Button>
             </>
           )}
           {role === 'ADMIN' && ev.status === 'APPROVED' && (
-            <Button variant="secondary" loading={busyAction === 'archive'} onClick={() => run('archive', () => archiveEvaluation(id))}>
+            <Button className="min-h-12" variant="secondary" loading={busyAction === 'archive'} onClick={() => run('archive', () => archiveEvaluation(id))}>
               Archive
             </Button>
           )}
@@ -168,15 +174,18 @@ export default function EvaluationDetailPage() {
           )}
         </div>
         {showReturn && role === 'REVIEWER' && (
-          <div className="mt-4 flex max-w-xl gap-2">
+          <div className="mt-4 grid max-w-2xl gap-2 border-t border-slate-200 pt-4 sm:grid-cols-[1fr_auto]">
+            <label htmlFor="return-comment" className="sr-only">Return comments</label>
             <input
+              id="return-comment"
               value={returnComment}
               onChange={(e) => setReturnComment(e.target.value)}
               placeholder="What must the engineer fix?"
-              className="block w-full rounded-lg border-0 px-3 py-2 text-sm shadow-sm ring-1 ring-inset ring-slate-300"
+              className="block min-h-12 w-full rounded-lg border-0 px-3 py-2.5 text-sm shadow-sm ring-1 ring-inset ring-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             <Button
               variant="danger"
+              className="min-h-12"
               loading={busyAction === 'return'}
               disabled={!returnComment.trim()}
               onClick={() => run('return', () => returnEvaluation(id, returnComment)).then(() => setShowReturn(false))}
@@ -188,44 +197,45 @@ export default function EvaluationDetailPage() {
       </Card>
 
             {/* Report exports */}
-      <Card title="Type Evaluation Report (R 76-2)">
+      <Card title="02 · Type evaluation report · R 76-2">
         {reportError && (
           <div className="mb-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-inset ring-amber-200">
             {reportError}
           </div>
         )}
         <div className="flex flex-wrap gap-3">
-          <Button variant="secondary" onClick={() => openPrintableHtml(printPath(id))}>
-            👁 Preview (print-ready)
+          <Button className="min-h-12" variant="secondary" onClick={() => openPrintableHtml(printPath(id))}>
+            Preview print layout
           </Button>
-          <Button loading={reportBusy === 'PDF'} onClick={() => doExport('PDF')}>
-            ⬇ PDF
+          <Button className="min-h-12" loading={reportBusy === 'PDF'} onClick={() => doExport('PDF')}>
+            Export PDF
           </Button>
-          <Button loading={reportBusy === 'DOCX'} onClick={() => doExport('DOCX')}>
-            ⬇ Word (editable)
+          <Button className="min-h-12" loading={reportBusy === 'DOCX'} onClick={() => doExport('DOCX')}>
+            Export Word
           </Button>
         </div>
         {reportExports.data && reportExports.data.length > 0 && (
-          <table className="mt-4 w-full text-left text-xs">
+          <div className="mt-4 overflow-x-auto border border-slate-200">
+          <table className="min-w-[42rem] w-full text-left text-xs">
             <thead>
               <tr className="border-b border-slate-200 uppercase text-slate-500">
-                <th className="py-1 pr-3">Format</th>
-                <th className="py-1 pr-3">Version</th>
-                <th className="py-1 pr-3">SHA-256</th>
-                <th className="py-1 pr-3">Generated</th>
-                <th className="py-1" />
+                <th className="px-3 py-2.5">Format</th>
+                <th className="px-3 py-2.5">Version</th>
+                <th className="px-3 py-2.5">SHA-256</th>
+                <th className="px-3 py-2.5">Generated</th>
+                <th className="px-3 py-2.5" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {reportExports.data.map((x) => (
                 <tr key={x.id}>
-                  <td className="py-1 pr-3 font-medium">{x.format}</td>
-                  <td className="py-1 pr-3">v{x.version}</td>
-                  <td className="py-1 pr-3 font-mono">{x.sha256.slice(0, 16)}…</td>
-                  <td className="py-1 pr-3 text-slate-500">{fmtDateTime(x.created_at)}</td>
-                  <td className="py-1 text-right">
+                  <td className="px-3 py-2.5 font-medium">{x.format}</td>
+                  <td className="px-3 py-2.5">v{x.version}</td>
+                  <td className="px-3 py-2.5 font-mono">{x.sha256.slice(0, 16)}…</td>
+                  <td className="px-3 py-2.5 text-slate-500">{fmtDateTime(x.created_at)}</td>
+                  <td className="px-3 py-2 text-right">
                     <button
-                      className="font-medium text-primary-700 hover:underline"
+                      className="min-h-11 px-2 font-medium text-primary-700 underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                       onClick={() =>
                         downloadAuthed(exportDownloadPath(id, x.id),
                           `report_${x.format.toLowerCase()}_v${x.version}.${x.format.toLowerCase()}`)
@@ -238,18 +248,18 @@ export default function EvaluationDetailPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
         <p className="mt-3 text-xs text-slate-500">
-          PDF uses the server PDF engine when installed; otherwise use Preview →
-          “Print / Save as PDF”. Word exports are always generated.
+          PDF uses the server PDF engine when installed. If it is unavailable, use the print preview and choose “Print / Save as PDF”. Word exports are always generated.
         </p>
       </Card>
 
       {/* Required tests checklist */}
-      <Card title={`Required tests (${preview.data?.outcome ?? '…'})`}>
+      <Card title={`03 · Required tests · ${preview.data?.outcome ?? 'pending'}`}>
         {preview.data ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="min-w-[38rem] w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
                   <th className="py-2 pr-4">Form</th>
@@ -264,13 +274,13 @@ export default function EvaluationDetailPage() {
                   const canEdit = editable && role === 'ENGINEER';
                   return (
                     <tr key={kind} className="hover:bg-slate-50">
-                      <td className="py-2 pr-4 font-mono text-xs text-slate-500">{testFormNo(kind)}</td>
-                      <td className="py-2 pr-4 font-medium">{testTitle(kind)}</td>
-                      <td className="py-2 pr-4"><VerdictBadge verdict={rec?.verdict ?? 'PENDING'} /></td>
-                      <td className="py-2 text-right">
-                        <Link
+                       <td className="h-12 py-2 pr-4 font-mono text-xs text-slate-500">{testFormNo(kind)}</td>
+                       <td className="h-12 py-2 pr-4 font-medium">{testTitle(kind)}</td>
+                       <td className="h-12 py-2 pr-4"><VerdictBadge verdict={rec?.verdict ?? 'PENDING'} /></td>
+                       <td className="h-12 py-1 text-right">
+                         <Link
                           to={`/evaluations/${id}/tests/${kind}/1`}
-                          className="text-sm font-medium text-primary-700 hover:underline"
+                           className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-primary-700 underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                         >
                           {rec ? 'View / edit' : canEdit ? 'Enter data' : 'Open'}
                         </Link>
@@ -287,13 +297,13 @@ export default function EvaluationDetailPage() {
       </Card>
 
       {/* Test equipment (submission gate requires ≥1 link) */}
-      <Card title="Test equipment (traceability — R 76-2 p.8)">
+      <Card title="04 · Test equipment traceability · R 76-2 p.8">
         {allEq.data && (
           <ul className="divide-y divide-slate-100">
             {allEq.data.map((eq) => {
               const linked = linkedIds.has(eq.id);
               return (
-                <li key={eq.id} className="flex items-center justify-between py-2 text-sm">
+                <li key={eq.id} className="flex min-h-16 flex-wrap items-center justify-between gap-3 py-2 text-sm">
                   <div>
                     <p className="font-medium">{eq.name ?? eq.kind}</p>
                     <p className="text-xs text-slate-500">
@@ -305,7 +315,7 @@ export default function EvaluationDetailPage() {
                   ) : (
                     editable &&
                     (role === 'ENGINEER' || role === 'ADMIN') && (
-                      <Button variant="secondary" onClick={() => run('link', () => linkEquipment(id, eq.id))}>
+                      <Button className="min-h-11" variant="secondary" onClick={() => run('link', () => linkEquipment(id, eq.id))}>
                         Link
                       </Button>
                     )
@@ -319,13 +329,13 @@ export default function EvaluationDetailPage() {
 
       {/* Other recorded pages */}
       {records.data && records.data.length > 0 && (
-        <Card title="All recorded pages">
-          <div className="flex flex-wrap gap-2">
+        <Card title="05 · All recorded pages">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {records.data.map((r) => (
               <Link
                 key={r.id}
                 to={`/evaluations/${id}/tests/${r.kind}/${r.instance_no}`}
-                className="rounded-lg border border-slate-200 px-3 py-2 text-xs hover:bg-slate-50"
+                className="flex min-h-12 items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
               >
                 <span className="font-mono text-slate-400">#{r.form_no ?? '?'}</span>{' '}
                 <span className="font-medium">{testTitle(r.kind)}</span>{' '}

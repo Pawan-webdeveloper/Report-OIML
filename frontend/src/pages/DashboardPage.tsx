@@ -5,7 +5,7 @@ import { getKpis } from '../api/dashboard';
 import { listEvaluations } from '../api/evaluations';
 import { useAsync } from '../hooks/useAsync';
 import type { EvalStatus } from '../types';
-import { Card, KpiCard } from '../components/ui/Card';
+import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge, OutcomeBadge, StatusBadge } from '../components/ui/Badge';
 import { fmtDateTime } from '../lib/format';
@@ -58,69 +58,106 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="space-y-6">
-      {/* Signed-in user */}
+    <div className="space-y-5">
       {user && (
-        <div className="rounded-xl border border-primary-700 bg-gradient-to-br from-primary-700 to-primary-900 p-5 shadow-sm">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/15 text-lg font-semibold text-white">
+        <section className="rounded-xl border border-slate-800 bg-slate-900 px-5 py-4 text-white shadow-sm" aria-label="Signed-in account">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-sm font-semibold tracking-wide text-slate-100" aria-hidden="true">
               {initials(user.full_name || user.username)}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium uppercase tracking-wide text-primary-200">
-                Signed in as
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                Active account
               </p>
-              <p className="truncate text-xl font-semibold text-white">
+              <p className="mt-0.5 truncate text-base font-semibold text-white">
                 {user.full_name || user.username}
               </p>
-              <p className="truncate text-sm text-primary-100">
+              <p className="truncate text-xs text-slate-400">
                 @{user.username} · {user.email}
               </p>
             </div>
-            <Badge label={user.role} className="bg-white/15 text-white ring-white/30" />
+            <Badge label={user.role} className="bg-slate-800 text-slate-200 ring-slate-600" />
           </div>
+        </section>
+      )}
+
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-teal-700">Operations overview</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Evaluation control desk</h1>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">Current workload, review progress, and recorded test outcomes.</p>
+        </div>
+        <p className="text-xs text-slate-500">Live system totals</p>
+      </div>
+
+      {kpis.error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+          <p className="font-semibold">Dashboard totals are unavailable</p>
+          <p className="mt-1 text-xs">{kpis.error}</p>
+          <Button variant="secondary" className="mt-3" onClick={kpis.reload}>Retry totals</Button>
         </div>
       )}
 
-      {/* KPI cards (server-side) */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard label="Total Reports" value={k?.totals.evaluations ?? '…'} />
-        <KpiCard label="In Progress" value={inFlight} tone="blue" />
-        <KpiCard label="Under Review" value={inReview} tone="amber" />
-        <KpiCard label="Approved / Archived" value={approved} tone="emerald" />
-      </div>
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Evaluation summary">
+        {[
+          { label: 'Total reports', value: k?.totals.evaluations, valueClass: 'text-slate-950' },
+          { label: 'In progress', value: k ? inFlight : undefined, valueClass: 'text-teal-800' },
+          { label: 'Under review', value: k ? inReview : undefined, valueClass: 'text-amber-700' },
+          { label: 'Approved or archived', value: k ? approved : undefined, valueClass: 'text-emerald-700' },
+        ].map((item) => (
+          <div key={item.label} className="min-w-0 rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-5">
+            <p className="text-xs font-medium leading-4 text-slate-500">{item.label}</p>
+            {kpis.loading ? (
+              <div className="mt-3 h-8 w-16 animate-pulse rounded bg-slate-100 motion-reduce:animate-none" />
+            ) : (
+              <p className={`mt-2 text-2xl font-semibold tabular-nums tracking-tight sm:text-3xl ${item.valueClass}`}>{item.value ?? '—'}</p>
+            )}
+          </div>
+        ))}
+      </section>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card title="Evaluations created — last 6 months">
-          <div className="h-44">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={k?.trend ?? []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="month" fontSize={11} tickLine={false} />
-                <YAxis allowDecimals={false} fontSize={11} width={28} tickLine={false} />
-                <Tooltip />
-                <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <Card title="Evaluation volume · last 6 months">
+          <div className="h-52" aria-label="Evaluations created by month">
+            {kpis.loading ? (
+              <div className="h-full animate-pulse rounded-md bg-slate-100 motion-reduce:animate-none" />
+            ) : (k?.trend.length ?? 0) === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center px-5 text-center">
+                <p className="text-sm font-medium text-slate-700">No evaluation volume recorded</p>
+                <p className="mt-1 text-xs text-slate-500">Monthly activity will appear after reports are created.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={k?.trend ?? []}>
+                  <CartesianGrid vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis allowDecimals={false} fontSize={11} width={28} tickLine={false} axisLine={false} />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#0f766e" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </Card>
 
-        <Card title="Failure analysis — FAILED verdicts by test">
-          <div className="h-44">
-            {(k?.failures.length ?? 0) === 0 ? (
-              <div className="flex h-full items-center justify-center text-sm text-slate-500">
-                🎉 No failed tests recorded yet
+        <Card title="Failure analysis · failed verdicts by test">
+          <div className="h-52">
+            {kpis.loading ? (
+              <div className="h-full animate-pulse rounded-md bg-slate-100 motion-reduce:animate-none" />
+            ) : (k?.failures.length ?? 0) === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center px-5 text-center">
+                <p className="text-sm font-medium text-slate-700">No failed tests recorded</p>
+                <p className="mt-1 text-xs text-slate-500">Failure counts will appear here when a test receives a failed verdict.</p>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={k?.failures ?? []} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis type="number" allowDecimals={false} fontSize={11} tickLine={false} />
+                  <CartesianGrid horizontal={false} stroke="#e2e8f0" />
+                  <XAxis type="number" allowDecimals={false} fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis type="category" dataKey="kind" width={110} fontSize={10}
-                    tickFormatter={shortKind} tickLine={false} />
+                    tickFormatter={shortKind} tickLine={false} axisLine={false} />
                   <Tooltip />
-                  <Bar dataKey="count" fill="#dc2626" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="count" fill="#b91c1c" radius={[0, 3, 3, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -128,33 +165,32 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Small stats strip */}
       {stats.length > 0 && (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <section className="grid grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white lg:grid-cols-4" aria-label="Registry totals">
           {stats.map((s) => (
             <div key={s.label}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm">
-              <p className="text-xs text-slate-500">{s.label}</p>
-              <p className="mt-0.5 text-lg font-semibold text-slate-800">{s.value}</p>
+              className="border-b border-r border-slate-200 px-4 py-3 text-sm last:border-r-0 lg:border-b-0">
+              <p className="text-xs leading-4 text-slate-500">{s.label}</p>
+              <p className="mt-1 text-lg font-semibold tabular-nums text-slate-900">{s.value}</p>
             </div>
           ))}
-        </div>
+        </section>
       )}
 
       <Card
-        title="Type Evaluation Reports"
+        title="Recent type evaluation reports"
         actions={
           <Button variant="secondary" onClick={reload} disabled={loading}>
-            ↻ Refresh
+            Refresh
           </Button>
         }
       >
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="mb-4 flex flex-wrap gap-2" aria-label="Filter reports by status">
           {FILTERS.map((f) => (
-            <button key={f.key} onClick={() => setFilter(f.key)}
-              className={`rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset transition ${
+            <button key={f.key} type="button" aria-pressed={filter === f.key} onClick={() => setFilter(f.key)}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium ring-1 ring-inset transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 ${
                 filter === f.key
-                  ? 'bg-primary-600 text-white ring-primary-600'
+                  ? 'bg-slate-900 text-white ring-slate-900'
                   : 'bg-white text-slate-600 ring-slate-300 hover:bg-slate-50'
               }`}>
               {f.label}
@@ -163,8 +199,8 @@ export default function DashboardPage() {
         </div>
 
         {error && (
-          <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-inset ring-red-200">
-            <p className="font-medium">Failed to load evaluations</p>
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+            <p className="font-semibold">Reports could not be loaded</p>
             <p className="mt-1 text-xs">{error}</p>
             <Button variant="secondary" className="mt-3" onClick={reload}>Retry</Button>
           </div>
@@ -173,46 +209,47 @@ export default function DashboardPage() {
         {loading && (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-12 animate-pulse rounded-lg bg-slate-100" />
+              <div key={i} className="h-12 animate-pulse rounded-md bg-slate-100 motion-reduce:animate-none" />
             ))}
           </div>
         )}
 
         {!loading && !error && visible.length === 0 && (
-          <div className="py-12 text-center">
-            <p className="text-4xl">🗂️</p>
-            <p className="mt-3 text-sm font-medium text-slate-700">No evaluations found</p>
+          <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center">
+            <p className="text-sm font-semibold text-slate-800">No reports in this view</p>
+            <p className="mt-1 text-xs text-slate-500">Choose another status to review the full register.</p>
           </div>
         )}
 
         {!loading && !error && visible.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-[780px] text-left text-sm">
+              <caption className="sr-only">Type evaluation reports</caption>
               <thead>
-                <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-                  <th className="py-2 pr-4 font-semibold">Report No.</th>
-                  <th className="py-2 pr-4 font-semibold">Status</th>
-                  <th className="py-2 pr-4 font-semibold">Outcome</th>
-                  <th className="py-2 pr-4 font-semibold">Purpose</th>
-                  <th className="py-2 pr-4 font-semibold">Created</th>
-                  <th className="py-2" />
+                <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] uppercase tracking-[0.08em] text-slate-500">
+                  <th scope="col" className="px-3 py-2.5 font-semibold">Report no.</th>
+                  <th scope="col" className="px-3 py-2.5 font-semibold">Status</th>
+                  <th scope="col" className="px-3 py-2.5 font-semibold">Outcome</th>
+                  <th scope="col" className="px-3 py-2.5 font-semibold">Purpose</th>
+                  <th scope="col" className="px-3 py-2.5 font-semibold">Created</th>
+                  <th scope="col" className="px-3 py-2.5"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {visible.map((ev) => (
-                  <tr key={ev.id} className="hover:bg-slate-50">
-                    <td className="py-3 pr-4 font-mono text-xs font-medium text-primary-700">
+                  <tr key={ev.id} className="transition-colors hover:bg-slate-50">
+                    <td className="px-3 py-3 font-mono text-xs font-semibold tabular-nums text-teal-800">
                       {ev.report_no}
                     </td>
-                    <td className="py-3 pr-4"><StatusBadge status={ev.status} /></td>
-                    <td className="py-3 pr-4">
+                    <td className="px-3 py-3"><StatusBadge status={ev.status} /></td>
+                    <td className="px-3 py-3">
                       {ev.outcome
                         ? <OutcomeBadge outcome={ev.outcome} />
                         : <span className="text-slate-400">—</span>}
                     </td>
-                    <td className="py-3 pr-4 text-slate-600">{ev.purpose.replaceAll('_', ' ')}</td>
-                    <td className="py-3 pr-4 text-slate-500">{fmtDateTime(ev.created_at)}</td>
-                    <td className="py-3 text-right">
+                    <td className="px-3 py-3 text-slate-600">{ev.purpose.replaceAll('_', ' ')}</td>
+                    <td className="whitespace-nowrap px-3 py-3 text-xs tabular-nums text-slate-500">{fmtDateTime(ev.created_at)}</td>
+                    <td className="px-3 py-3 text-right">
                       <Button variant="ghost" onClick={() => navigate(`/evaluations/${ev.id}`)}>
                         View
                       </Button>

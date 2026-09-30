@@ -62,7 +62,7 @@ export default function RepeatabilityForm({
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-3 rounded-lg bg-slate-50 px-4 py-3 text-sm ring-1 ring-inset ring-slate-200">
+      <div className="flex flex-wrap items-center gap-3 border-l-4 border-slate-700 bg-slate-50 px-4 py-3 text-sm">
         <span>Rule: every |E| ≤ MPE <b>and</b> Pmax − Pmin ≤ MPE (A.4.10)</span>
         <span className="ml-auto flex items-center gap-2">Live: <PassFailBadge pass={anyResult ? allPass : null} /></span>
       </div>
@@ -70,13 +70,14 @@ export default function RepeatabilityForm({
       {series.map((s, si) => {
         const r = live[si];
         return (
-          <div key={si} className="rounded-lg border border-slate-200 p-4">
+          <section key={si} className="border border-slate-300 bg-white p-4" aria-labelledby={`series-${si}`}>
             <div className="mb-3 flex flex-wrap items-end gap-3">
+              <h3 id={`series-${si}`} className="sr-only">Series {si + 1}</h3>
               <label className="text-xs text-slate-600">
                 Load {si + 1} ({unit})
                 <input value={s.L} disabled={readOnly} inputMode="decimal"
                   onChange={(e) => setSeries(series.map((x, j) => (j === si ? { ...x, L: e.target.value } : x)))}
-                  className="mt-1 block w-32 rounded border border-slate-300 px-2 py-1 text-right font-mono text-sm disabled:bg-slate-100" />
+                   className="mt-1 block min-h-11 w-32 rounded-md border border-slate-300 px-2 text-right font-mono text-sm tabular-nums outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 disabled:bg-slate-100" />
               </label>
               {r && (
                 <span className="text-xs text-slate-600">
@@ -89,36 +90,37 @@ export default function RepeatabilityForm({
               )}
               <span className="ml-auto"><PassFailBadge pass={r?.pass ?? null} /></span>
               {!readOnly && series.length > 1 && (
-                <button className="text-xs text-red-500 hover:underline"
-                  onClick={() => setSeries(series.filter((_, j) => j !== si))}>remove series</button>
+                 <button className="min-h-11 px-2 text-xs font-medium text-red-700 underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600"
+                   onClick={() => setSeries(series.filter((_, j) => j !== si))}>Remove series</button>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
               {s.weighings.map((w, wi) => (
-                <div key={wi} className="flex items-center gap-1">
-                  <input value={w.I} disabled={readOnly} inputMode="decimal" placeholder="I"
+                <div key={wi} className="grid grid-cols-[1.5rem_1fr_1fr] items-center gap-1 rounded-md bg-slate-50 p-1">
+                  <span className="text-center font-mono text-[10px] text-slate-400">{wi + 1}</span>
+                  <input value={w.I} disabled={readOnly} inputMode="decimal" placeholder="I" aria-label={`Series ${si + 1}, weighing ${wi + 1}, indication`}
                     onChange={(e) => setSeries(series.map((x, j) => j === si
                       ? { ...x, weighings: x.weighings.map((y, k) => (k === wi ? { ...y, I: e.target.value } : y)) }
                       : x))}
-                    className="w-full rounded border border-slate-300 px-2 py-1 text-right font-mono text-xs disabled:bg-slate-100" />
-                  <input value={w.dL} disabled={readOnly} inputMode="decimal" placeholder="ΔL"
+                    className="min-h-11 w-full rounded-md border border-slate-300 px-2 text-right font-mono text-xs tabular-nums outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 disabled:bg-slate-100" />
+                  <input value={w.dL} disabled={readOnly} inputMode="decimal" placeholder="ΔL" aria-label={`Series ${si + 1}, weighing ${wi + 1}, delta load`}
                     onChange={(e) => setSeries(series.map((x, j) => j === si
                       ? { ...x, weighings: x.weighings.map((y, k) => (k === wi ? { ...y, dL: e.target.value } : y)) }
                       : x))}
-                    className="w-full rounded border border-slate-300 px-2 py-1 text-right font-mono text-xs disabled:bg-slate-100" />
+                    className="min-h-11 w-full rounded-md border border-slate-300 px-2 text-right font-mono text-xs tabular-nums outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500 disabled:bg-slate-100" />
                 </div>
               ))}
             </div>
-          </div>
+          </section>
         );
       })}
 
       {!readOnly && (
-        <div className="flex gap-3">
-          <Button onClick={save} loading={busy}>Save repeatability test</Button>
-          <Button variant="secondary"
+        <div className="sticky bottom-0 z-10 -mx-5 flex flex-wrap gap-3 border-t border-slate-300 bg-white/95 px-5 py-3 backdrop-blur">
+          <Button className="min-h-12" onClick={save} loading={busy}>Save repeatability test</Button>
+          <Button className="min-h-12" variant="secondary"
             onClick={() => setSeries([...series, { L: '', weighings: Array.from({ length: 10 }, () => ({ I: '', dL: '' })) }])}>
-            + Add series
+            Add series
           </Button>
         </div>
       )}

@@ -108,20 +108,32 @@ export default function InstrumentFormPage({ mode }: { mode: 'create' | 'edit' }
   if ((mode === 'edit' && existing.loading) || parties.loading) return <Spinner />;
   if (mode === 'edit' && existing.error) return <p className="text-sm text-red-600">{existing.error}</p>;
 
+  const selectClass = 'block min-h-12 w-full rounded-lg border-0 bg-white px-3 py-2.5 text-sm shadow-sm ring-1 ring-inset ring-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500';
+
   return (
-    <form onSubmit={submit} className="space-y-6">
-      <Card title={mode === 'create' ? 'Register instrument (R 76-2 General Information)' : `Edit — ${existing.data?.type_designation ?? ''}`}>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Input label="Type designation *" value={typeDesignation} onChange={(e) => setTypeDesignation(e.target.value)} required />
-          <Input label="Application no." value={applicationNo} onChange={(e) => setApplicationNo(e.target.value)} />
-          <Input label="Category" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Platform scale / Weighbridge…" />
+    <form onSubmit={submit} className="space-y-5 pb-24">
+      <div className="border-b border-slate-300 pb-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary-700">Instrument register · R 76-2</p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+          {mode === 'create' ? 'Register an instrument' : `Edit ${existing.data?.type_designation ?? 'instrument'}`}
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+          Record the identification, metrological characteristics and operating configuration used for every evaluation.
+        </p>
+      </div>
+
+      <Card title="01 · Identity and classification">
+        <div className="grid grid-cols-1 gap-x-5 gap-y-4 md:grid-cols-2 xl:grid-cols-3">
+          <Input className="min-h-12" label="Type designation *" value={typeDesignation} onChange={(e) => setTypeDesignation(e.target.value)} required />
+          <Input className="min-h-12" label="Application no." value={applicationNo} onChange={(e) => setApplicationNo(e.target.value)} />
+          <Input className="min-h-12" label="Category" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Platform scale / Weighbridge…" />
 
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Manufacturer</label>
             <select
               value={manufacturerId}
               onChange={(e) => setManufacturerId(e.target.value)}
-              className="block w-full rounded-lg border-0 px-3 py-2 text-sm shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-primary-500"
+              className={selectClass}
             >
               <option value="">— none —</option>
               {(parties.data ?? []).map((p) => (
@@ -136,7 +148,7 @@ export default function InstrumentFormPage({ mode }: { mode: 'create' | 'edit' }
             <select
               value={accuracyClass}
               onChange={(e) => setAccuracyClass(e.target.value as AccuracyClass)}
-              className="block w-full rounded-lg border-0 px-3 py-2 text-sm shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-primary-500"
+              className={selectClass}
             >
               {(['I', 'II', 'III', 'IIII'] as AccuracyClass[]).map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -149,19 +161,19 @@ export default function InstrumentFormPage({ mode }: { mode: 'create' | 'edit' }
             <select
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
-              className="block w-full rounded-lg border-0 px-3 py-2 text-sm shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-primary-500"
+              className={selectClass}
             >
               {['kg', 'g', 'mg', 't', 'ct'].map((u) => <option key={u} value={u}>{u}</option>)}
             </select>
-            <p className="mt-1 text-xs text-slate-500">Tip: use <b>g</b> for the cleanest test-entry demo.</p>
+            <p className="mt-1 text-xs text-slate-500">The selected unit is used throughout test entry.</p>
           </div>
 
-          <Input label={`Min capacity (${unit}) *`} value={minCapacity} onChange={(e) => setMinCapacity(e.target.value)} placeholder="0.1" required />
+          <Input className="min-h-12" label={`Min capacity (${unit}) *`} value={minCapacity} onChange={(e) => setMinCapacity(e.target.value)} placeholder="0.1" required />
 
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Printer</label>
             <select value={printer} onChange={(e) => setPrinter(e.target.value)}
-              className="block w-full rounded-lg border-0 px-3 py-2 text-sm shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-primary-500">
+              className={selectClass}>
               <option value="NOT_PRESENT_CONNECTABLE">Not present (connectable)</option>
               <option value="BUILT_IN">Built-in</option>
               <option value="CONNECTED">Connected</option>
@@ -170,61 +182,68 @@ export default function InstrumentFormPage({ mode }: { mode: 'create' | 'edit' }
           </div>
         </div>
 
-        <fieldset className="mt-5 flex flex-wrap gap-5 text-sm">
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={mainsAc} onChange={(e) => setMainsAc(e.target.checked)} className="h-4 w-4" />
+        <fieldset className="mt-6 border-t border-slate-200 pt-5">
+          <legend className="mb-2 text-sm font-semibold text-slate-800">Operating configuration</legend>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          <label className="flex min-h-12 items-center gap-3 rounded-lg border border-slate-200 px-3 text-sm hover:bg-slate-50">
+            <input type="checkbox" checked={mainsAc} onChange={(e) => setMainsAc(e.target.checked)} className="h-5 w-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
             AC mains powered (electronic)
           </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={zeroTracking} onChange={(e) => setZeroTracking(e.target.checked)} className="h-4 w-4" />
+          <label className="flex min-h-12 items-center gap-3 rounded-lg border border-slate-200 px-3 text-sm hover:bg-slate-50">
+            <input type="checkbox" checked={zeroTracking} onChange={(e) => setZeroTracking(e.target.checked)} className="h-5 w-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
             Zero-tracking device
           </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={tareSubtractive} onChange={(e) => setTareSubtractive(e.target.checked)} className="h-4 w-4" />
+          <label className="flex min-h-12 items-center gap-3 rounded-lg border border-slate-200 px-3 text-sm hover:bg-slate-50">
+            <input type="checkbox" checked={tareSubtractive} onChange={(e) => setTareSubtractive(e.target.checked)} className="h-5 w-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
             Subtractive tare
           </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={directSales} onChange={(e) => setDirectSales(e.target.checked)} className="h-4 w-4" />
+          <label className="flex min-h-12 items-center gap-3 rounded-lg border border-slate-200 px-3 text-sm hover:bg-slate-50">
+            <input type="checkbox" checked={directSales} onChange={(e) => setDirectSales(e.target.checked)} className="h-5 w-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
             Direct sales to public
           </label>
+          </div>
         </fieldset>
       </Card>
 
-      <Card title="Weighing ranges (e, d, Max)">
-        <div className="space-y-3">
+      <Card title="02 · Weighing ranges">
+        <p className="mb-4 max-w-3xl text-sm leading-6 text-slate-600">
+          Enter verification scale interval (e), actual scale interval (d), and maximum capacity for each range.
+        </p>
+        <div className="space-y-4">
           {ranges.map((r, i) => (
-            <div key={i} className="grid grid-cols-4 items-end gap-3">
-              <Input label={`Range ${i + 1} — e (${unit}) *`} value={r.e}
+            <div key={i} className="grid grid-cols-1 items-end gap-3 rounded-lg border border-slate-200 bg-slate-50/60 p-4 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_auto]">
+              <Input className="min-h-12" label={`Range ${i + 1} — e (${unit}) *`} value={r.e}
                 onChange={(e) => setRanges(ranges.map((x, j) => (j === i ? { ...x, e: e.target.value } : x)))} />
-              <Input label={`d (${unit}) *`} value={r.d}
+              <Input className="min-h-12" label={`d (${unit}) *`} value={r.d}
                 onChange={(e) => setRanges(ranges.map((x, j) => (j === i ? { ...x, d: e.target.value } : x)))} />
-              <Input label={`Max (${unit}) *`} value={r.max}
+              <Input className="min-h-12" label={`Max (${unit}) *`} value={r.max}
                 onChange={(e) => setRanges(ranges.map((x, j) => (j === i ? { ...x, max: e.target.value } : x)))} />
               <Button
                 variant="danger"
                 onClick={() => setRanges(ranges.filter((_, j) => j !== i))}
                 disabled={ranges.length === 1}
+                className="min-h-12"
               >
                 Remove
               </Button>
             </div>
           ))}
-          <Button variant="secondary" onClick={() => setRanges([...ranges, { ...EMPTY_RANGE }])}>
-            + Add range (multi-interval)
+          <Button variant="secondary" className="min-h-12" onClick={() => setRanges([...ranges, { ...EMPTY_RANGE }])}>
+            Add range
           </Button>
         </div>
 
         {/* Live OIML Table 3 validation */}
-        <div className="mt-5 rounded-lg border border-slate-200 p-4">
-          <p className="mb-2 text-sm font-semibold text-slate-700">OIML R 76-1 Table 3 — live compliance</p>
+        <div className="mt-5 border-l-4 border-slate-300 bg-slate-50 px-4 py-3">
+          <p className="mb-2 text-sm font-semibold text-slate-800">Live compliance · OIML R 76-1 Table 3</p>
           {live.errors.length === 0 && live.warnings.length === 0 && ranges.every((r) => r.e && r.d && r.max) && (
-            <p className="text-sm font-medium text-emerald-700">✓ Compliant — classification valid.</p>
+            <p className="text-sm font-medium text-emerald-700">Compliant — classification valid.</p>
           )}
           {live.errors.map((v) => (
-            <p key={v.code} className="text-sm text-red-700">✗ {v.message}</p>
+            <p key={v.code} className="text-sm text-red-700">Error: {v.message}</p>
           ))}
           {live.warnings.map((v) => (
-            <p key={v.code} className="text-sm text-amber-700">⚠ {v.message}</p>
+            <p key={v.code} className="text-sm text-amber-700">Review: {v.message}</p>
           ))}
         </div>
       </Card>
@@ -233,11 +252,18 @@ export default function InstrumentFormPage({ mode }: { mode: 'create' | 'edit' }
         <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-inset ring-red-200">{error}</div>
       )}
 
-      <div className="flex gap-3">
-        <Button type="submit" loading={busy} disabled={!canSave}>
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-300 bg-white/95 px-4 py-3 backdrop-blur md:pl-56 lg:pl-60">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
+          <p className="hidden text-xs text-slate-500 sm:block">
+            {canSave ? 'Required fields are complete.' : 'Complete required fields and resolve compliance errors.'}
+          </p>
+          <div className="ml-auto flex gap-3">
+        <Button type="submit" loading={busy} disabled={!canSave} className="min-h-12">
           {mode === 'create' ? 'Create instrument' : 'Save changes'}
         </Button>
-        <Button variant="secondary" onClick={() => navigate('/instruments')}>Cancel</Button>
+        <Button variant="secondary" className="min-h-12" onClick={() => navigate('/instruments')}>Cancel</Button>
+          </div>
+        </div>
       </div>
     </form>
   );

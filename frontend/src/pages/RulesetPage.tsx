@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { getRuleset, listRulesets } from '../api/admin';
 import { useAsync } from '../hooks/useAsync';
 import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { Spinner } from '../components/ui/Spinner';
 
 interface Band { up_to: string | null; mult: string }
 interface T3Row {
@@ -44,9 +44,6 @@ export default function RulesetPage() {
     [activeId],
   );
 
-  if (list.loading || (activeId && detail.loading)) return <Spinner />;
-  if (list.error) return <p className="text-sm text-red-600">{list.error}</p>;
-
   const doc = (detail.data?.document ?? {}) as RulesetDocument;
   const bands = cleanKeys((doc.mpe_bands ?? {}) as Record<string, unknown>);
   const t3 = cleanKeys((doc.classification_table3 ?? {}) as Record<string, unknown>);
@@ -54,49 +51,91 @@ export default function RulesetPage() {
     .filter(([k]) => !k.startsWith('_'));
 
   return (
-    <div className="space-y-6">
-      <Card title="OIML rule sets — rules are versioned DATA, not code">
-        <div className="flex flex-wrap gap-2">
+    <div className="space-y-5">
+      <header>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-teal-700">Controlled methodology</p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">OIML rule sets</h1>
+        <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">Versioned constants, clauses, and test applicability used to produce reproducible evaluation decisions.</p>
+      </header>
+
+      {list.loading && (
+        <div className="space-y-3" aria-label="Loading rule sets">
+          <div className="h-28 animate-pulse rounded-xl bg-slate-100 motion-reduce:animate-none" />
+          <div className="h-64 animate-pulse rounded-xl bg-slate-100 motion-reduce:animate-none" />
+        </div>
+      )}
+
+      {list.error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+          <p className="font-semibold">Rule sets could not be loaded</p>
+          <p className="mt-1 text-xs">{list.error}</p>
+          <Button variant="secondary" className="mt-3" onClick={list.reload}>Retry</Button>
+        </div>
+      )}
+
+      {!list.loading && !list.error && (list.data?.length ?? 0) === 0 && (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-12 text-center">
+          <p className="text-sm font-semibold text-slate-800">No rule sets available</p>
+          <p className="mt-1 text-xs text-slate-500">Import a versioned rule set before running evaluations.</p>
+        </div>
+      )}
+
+      {!list.loading && !list.error && (list.data?.length ?? 0) > 0 && (
+      <Card title="Available versions">
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3" role="list" aria-label="Rule set versions">
           {(list.data ?? []).map((r) => (
-            <button key={r.id} onClick={() => setSelected(r.id)}
-              className={`rounded-lg px-4 py-2 text-left text-sm ring-1 ring-inset transition ${
+            <button key={r.id} type="button" role="listitem" aria-pressed={activeId === r.id} onClick={() => setSelected(r.id)}
+              className={`rounded-lg px-4 py-3 text-left text-sm ring-1 ring-inset transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 ${
                 activeId === r.id
-                  ? 'bg-primary-600 text-white ring-primary-600'
+                  ? 'bg-slate-900 text-white ring-slate-900'
                   : 'bg-white text-slate-700 ring-slate-300 hover:bg-slate-50'
               }`}>
               <span className="block font-semibold">{r.id}</span>
-              <span className="block text-[11px] opacity-80">
-                sha256 {r.sha256.slice(0, 12)}…
+              <span className={`mt-1 block font-mono text-[11px] ${activeId === r.id ? 'text-slate-300' : 'text-slate-500'}`}>
+                SHA-256 {r.sha256.slice(0, 12)}…
               </span>
             </button>
           ))}
         </div>
-        <p className="mt-3 text-xs text-slate-500">
-          When OIML publishes a revision, a new JSON rule set is added — every constant
-          carries its clause number, and every report stores the exact rule-set hash it
-          was evaluated against. No code changes, full reproducibility.
+        <p className="mt-4 max-w-4xl text-xs leading-5 text-slate-500">
+          Each revision is stored as a new data document. Every report retains the exact
+          rule-set hash and clause references used during evaluation.
         </p>
       </Card>
+      )}
 
-      {detail.data && (
+      {activeId && detail.loading && (
+        <div className="h-64 animate-pulse rounded-xl bg-slate-100 motion-reduce:animate-none" aria-label="Loading rule set detail" />
+      )}
+
+      {detail.error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+          <p className="font-semibold">Rule-set detail could not be loaded</p>
+          <p className="mt-1 text-xs">{detail.error}</p>
+          <Button variant="secondary" className="mt-3" onClick={detail.reload}>Retry</Button>
+        </div>
+      )}
+
+      {!detail.loading && !detail.error && detail.data && (
         <>
-          <Card title={`MPE bands — Table 6 (initial verification) · ${detail.data.id}`}>
+          <Card title={`MPE bands · Table 6 · ${detail.data.id}`}>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full min-w-[520px] text-left text-sm">
+                <caption className="sr-only">Maximum permissible error bands for initial verification</caption>
                 <thead>
-                  <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
-                    <th className="py-2 pr-4">Class</th>
-                    <th className="py-2 pr-4">|MPE|</th>
-                    <th className="py-2">Load range (in e)</th>
+                  <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] uppercase tracking-[0.08em] text-slate-500">
+                    <th scope="col" className="px-3 py-2.5 font-semibold">Class</th>
+                    <th scope="col" className="px-3 py-2.5 font-semibold">|MPE|</th>
+                    <th scope="col" className="px-3 py-2.5 font-semibold">Load range (in e)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {Object.entries(bands).flatMap(([cls, arr]) =>
                     (arr as Band[]).map((b, i) => (
-                      <tr key={`${cls}-${i}`}>
-                        <td className="py-2 pr-4 font-semibold">{cls}</td>
-                        <td className="py-2 pr-4 font-mono">± {b.mult} e</td>
-                        <td className="py-2 font-mono text-xs">
+                      <tr key={`${cls}-${i}`} className="transition-colors hover:bg-slate-50">
+                        <td className="px-3 py-2.5 font-semibold text-slate-900">{cls}</td>
+                        <td className="px-3 py-2.5 font-mono tabular-nums">± {b.mult} e</td>
+                        <td className="px-3 py-2.5 font-mono text-xs tabular-nums text-slate-600">
                           {b.up_to === null
                             ? `m > ${String((arr as Band[])[i - 1]?.up_to ?? 0)}`
                             : `0 ≤ m ≤ ${b.up_to}`}
@@ -107,32 +146,33 @@ export default function RulesetPage() {
                 </tbody>
               </table>
             </div>
-            <p className="mt-2 text-xs text-slate-500">In service: MPE × 2 (clause 3.5.2).</p>
+            <p className="mt-3 text-xs text-slate-500">In-service limit: MPE × 2, clause 3.5.2.</p>
           </Card>
 
-          <Card title="Classification — Table 3 (e bands, n limits, Min)">
+          <Card title="Classification · Table 3">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full min-w-[680px] text-left text-sm">
+                <caption className="sr-only">Classification ranges, limits, and minimum capacity</caption>
                 <thead>
-                  <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
-                    <th className="py-2 pr-4">Class</th>
-                    <th className="py-2 pr-4">e range (g)</th>
-                    <th className="py-2 pr-4">n min</th>
-                    <th className="py-2 pr-4">n max</th>
-                    <th className="py-2">Min</th>
+                  <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] uppercase tracking-[0.08em] text-slate-500">
+                    <th scope="col" className="px-3 py-2.5 font-semibold">Class</th>
+                    <th scope="col" className="px-3 py-2.5 font-semibold">e range (g)</th>
+                    <th scope="col" className="px-3 py-2.5 font-semibold">n minimum</th>
+                    <th scope="col" className="px-3 py-2.5 font-semibold">n maximum</th>
+                    <th scope="col" className="px-3 py-2.5 font-semibold">Minimum capacity</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {CLASSES.flatMap((cls) =>
                     t3Rows(t3[cls]).map((row, i) => (
-                      <tr key={`${cls}-${i}`}>
-                        <td className="py-2 pr-4 font-semibold">{cls}</td>
-                        <td className="py-2 pr-4 font-mono text-xs">
+                      <tr key={`${cls}-${i}`} className="transition-colors hover:bg-slate-50">
+                        <td className="px-3 py-2.5 font-semibold text-slate-900">{cls}</td>
+                        <td className="px-3 py-2.5 font-mono text-xs tabular-nums text-slate-600">
                           {row.e_min_g} … {row.e_max_g ?? '∞'}
                         </td>
-                        <td className="py-2 pr-4 font-mono">{row.n_min}</td>
-                        <td className="py-2 pr-4 font-mono">{row.n_max ?? '∞'}</td>
-                        <td className="py-2 font-mono text-xs">{row.min_in_e} × e</td>
+                        <td className="px-3 py-2.5 font-mono tabular-nums">{row.n_min}</td>
+                        <td className="px-3 py-2.5 font-mono tabular-nums">{row.n_max ?? '∞'}</td>
+                        <td className="px-3 py-2.5 font-mono text-xs tabular-nums">{row.min_in_e} × e</td>
                       </tr>
                     )),
                   )}
@@ -141,24 +181,25 @@ export default function RulesetPage() {
             </div>
           </Card>
 
-          <Card title="Test catalogue (R 76-2 forms) & applicability">
+          <Card title="Test catalogue · R 76-2 forms">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full min-w-[620px] text-left text-sm">
+                <caption className="sr-only">Test catalogue forms and applicability</caption>
                 <thead>
-                  <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
-                    <th className="py-2 pr-4">Form</th>
-                    <th className="py-2 pr-4">Kind</th>
-                    <th className="py-2 pr-4">Clause</th>
-                    <th className="py-2">Required</th>
+                  <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] uppercase tracking-[0.08em] text-slate-500">
+                    <th scope="col" className="px-3 py-2.5 font-semibold">Form</th>
+                    <th scope="col" className="px-3 py-2.5 font-semibold">Test</th>
+                    <th scope="col" className="px-3 py-2.5 font-semibold">Clause</th>
+                    <th scope="col" className="px-3 py-2.5 font-semibold">Applicability</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {(doc.test_catalogue?.entries ?? []).map((e) => (
-                    <tr key={e.kind}>
-                      <td className="py-2 pr-4 font-mono text-xs">{e.form_no}</td>
-                      <td className="py-2 pr-4 font-medium">{e.kind}</td>
-                      <td className="py-2 pr-4 font-mono text-xs text-slate-500">{e.clause}</td>
-                      <td className="py-2">
+                    <tr key={e.kind} className="transition-colors hover:bg-slate-50">
+                      <td className="px-3 py-2.5 font-mono text-xs font-semibold text-slate-800">{e.form_no}</td>
+                      <td className="px-3 py-2.5 font-medium text-slate-900">{e.kind.replaceAll('_', ' ')}</td>
+                      <td className="px-3 py-2.5 font-mono text-xs text-slate-500">{e.clause}</td>
+                      <td className="px-3 py-2.5">
                         <Badge label={e.required ? 'Required' : 'If applicable'}
                           className={e.required
                             ? 'bg-emerald-100 text-emerald-800 ring-emerald-300'
@@ -171,14 +212,15 @@ export default function RulesetPage() {
             </div>
           </Card>
 
-          <Card title="Constants (every value carries its clause)">
+          <Card title="Referenced constants">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full min-w-[680px] text-left text-sm">
+                <caption className="sr-only">Rule-set constants and source clauses</caption>
                 <thead>
-                  <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
-                    <th className="py-2 pr-4">Key</th>
-                    <th className="py-2 pr-4">Value</th>
-                    <th className="py-2">Clause</th>
+                  <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] uppercase tracking-[0.08em] text-slate-500">
+                    <th scope="col" className="px-3 py-2.5 font-semibold">Key</th>
+                    <th scope="col" className="px-3 py-2.5 font-semibold">Value</th>
+                    <th scope="col" className="px-3 py-2.5 font-semibold">Clause</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -191,10 +233,10 @@ export default function RulesetPage() {
                       ),
                     );
                     return (
-                      <tr key={key}>
-                        <td className="py-2 pr-4 font-mono text-xs">{key}</td>
-                        <td className="py-2 pr-4 font-mono text-xs">{JSON.stringify(rest)}</td>
-                        <td className="py-2 font-mono text-xs text-slate-500">{clause}</td>
+                      <tr key={key} className="transition-colors hover:bg-slate-50">
+                        <td className="px-3 py-2.5 font-mono text-xs font-semibold text-slate-800">{key}</td>
+                        <td className="max-w-2xl px-3 py-2.5 font-mono text-xs leading-5 text-slate-700">{JSON.stringify(rest)}</td>
+                        <td className="whitespace-nowrap px-3 py-2.5 font-mono text-xs text-slate-500">{clause}</td>
                       </tr>
                     );
                   })}

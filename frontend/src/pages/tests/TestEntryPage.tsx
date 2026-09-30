@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { saveTestRecord } from '../../api/tests';
 import { getInstrument } from '../../api/instruments';
@@ -40,6 +40,7 @@ export default function TestEntryPage() {
   const instance = Number(instanceNo) || 1;
   const navigate = useNavigate();
   const role = useAuthStore((s) => s.user?.role);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const evaluation = useAsync(() => getEvaluation(id), [id]);
   const instId = evaluation.data?.instrument_id ?? null;
@@ -73,6 +74,7 @@ export default function TestEntryPage() {
   const resolutionG = engineInst.ranges[0].d;
 
   async function handleSubmit(observations: Record<string, unknown>) {
+    setSaveError(null);
     try {
       await saveTestRecord(id, {
         kind: kindU,
@@ -81,26 +83,26 @@ export default function TestEntryPage() {
       });
       navigate(`/evaluations/${id}`);
     } catch (err) {
-      // surface via window for simplicity; parent page shows banners elsewhere
-      alert(apiErrorDetail(err));
+      setSaveError(apiErrorDetail(err));
     }
   }
 
   const Form = REGISTRY[kindU] ?? JsonFallbackForm;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-8">
       <Card
-        title={`Form ${testFormNo(kindU)} — ${testTitle(kindU)}${instance > 1 ? ` (page ${instance})` : ''}`}
+        title={`Form ${testFormNo(kindU)} · ${testTitle(kindU)}${instance > 1 ? ` · page ${instance}` : ''}`}
         actions={<VerdictBadge verdict={existing?.verdict} />}
+        className="border-t-4 border-t-slate-800"
       >
-        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
+        <div className="flex flex-wrap items-start justify-between gap-4 text-sm text-slate-600">
           <div>
-            <p className="font-medium text-slate-800">
+            <p className="font-semibold text-slate-900">
               {instrument.data.type_designation} · Class {instrument.data.accuracy_class} ·{' '}
               {ev.report_no}
             </p>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <p className="mt-1 leading-5 text-slate-500">
               e = <b className="font-mono">{fmtE(engineInst, instrument.data.unit)}</b> {instrument.data.unit} ·
               {' '}Max = {instrument.data.ranges[instrument.data.ranges.length - 1]?.max_capacity} {instrument.data.unit} ·
               {' '}step during test = <b className="font-mono">{resolutionG ? resolutionG.div(engineInst.ranges[0].d.toNumber() ? 1 : 1).toString() : '—'}</b>
@@ -115,11 +117,17 @@ export default function TestEntryPage() {
               </span>
             )}
             <Link to={`/evaluations/${id}`}>
-              <Button variant="secondary">← Back to evaluation</Button>
+              <Button className="min-h-12" variant="secondary">Back to evaluation</Button>
             </Link>
           </div>
         </div>
       </Card>
+
+      {saveError && (
+        <div role="alert" className="border-l-4 border-red-600 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {saveError}
+        </div>
+      )}
 
       <Card>
         <Form

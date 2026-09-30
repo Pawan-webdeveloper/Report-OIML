@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     APP_NAME: str = "NAWI Type-Evaluation Portal (OIML R 76)"
     ENV: str = "dev"                    # dev | prod
     API_PREFIX: str = "/api"
+    # Comma-separated browser origins (Vite dev server). Same-origin SPA
+    # deploys do not need extra entries.
+    CORS_ORIGINS: str = "http://localhost:5173"
 
     # DB — dev: SQLite | prod: postgresql+psycopg://user:pass@host/nawi
     DATABASE_URL: str = "sqlite:///./nawi.db"
