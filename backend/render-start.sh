@@ -28,9 +28,19 @@ if [ -n "$UPLOAD_DIR" ] && [ ! -d "$UPLOAD_DIR" ]; then
     mkdir -p "$UPLOAD_DIR"
 fi
 
-# Run database migrations
-echo ">> Running database migrations..."
-alembic upgrade head
+# Create database tables directly (no alembic migrations available)
+echo ">> Creating database tables..."
+python -c "
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path('.').resolve()))
+from app.core.db import engine
+from app.core.db import Base
+import app.models  # Register all models
+
+Base.metadata.create_all(engine)
+print('✓ Database tables created')
+"
 
 # Check if database needs seeding (check if users table is empty)
 echo ">> Checking database state..."
