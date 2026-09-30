@@ -1,266 +1,353 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { getKpis } from '../api/dashboard';
 import { listEvaluations } from '../api/evaluations';
+import { listInstruments } from '../api/instruments';
 import { useAsync } from '../hooks/useAsync';
-import type { EvalStatus } from '../types';
-import { Card } from '../components/ui/Card';
+import type { EvalStatus, Instrument } from '../types';
 import { Button } from '../components/ui/Button';
-import { Badge, OutcomeBadge, StatusBadge } from '../components/ui/Badge';
 import { fmtDateTime } from '../lib/format';
-import { useAuthStore } from '../store/authStore';
 
-const FILTERS: { key: EvalStatus | 'ALL'; label: string }[] = [
-  { key: 'ALL', label: 'All' },
-  { key: 'DRAFT', label: 'Draft' },
-  { key: 'IN_PROGRESS', label: 'In Progress' },
-  { key: 'SUBMITTED', label: 'Submitted' },
-  { key: 'UNDER_REVIEW', label: 'Under Review' },
-  { key: 'APPROVED', label: 'Approved' },
-];
-
-const shortKind = (k: string) => (k.length > 14 ? `${k.slice(0, 13)}…` : k);
-
-const initials = (name: string) =>
-  name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join('') || '?';
+const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
+  DRAFT: { bg: 'bg-blue-100', text: 'text-blue-700' },
+  IN_PROGRESS: { bg: 'bg-amber-100', text: 'text-amber-700' },
+  SUBMITTED: { bg: 'bg-purple-100', text: 'text-purple-700' },
+  UNDER_REVIEW: { bg: 'bg-purple-100', text: 'text-purple-700' },
+  APPROVED: { bg: 'bg-green-100', text: 'text-green-700' },
+  ARCHIVED: { bg: 'bg-slate-100', text: 'text-slate-700' },
+  RETURNED: { bg: 'bg-red-100', text: 'text-red-700' },
+};
 
 export default function DashboardPage() {
   const [filter, setFilter] = useState<EvalStatus | 'ALL'>('ALL');
-  const kpis = useAsync(getKpis);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [page, setPage] = useState(1);
+  const [instruments, setInstruments] = useState<Record<string, Instrument>>({});
+  const perPage = 8;
+
   const { data, loading, error, reload } = useAsync(listEvaluations);
   const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
 
-  const k = kpis.data;
-  const sc = k?.status_counts ?? {};
-  const inFlight = (sc.DRAFT ?? 0) + (sc.IN_PROGRESS ?? 0) + (sc.RETURNED ?? 0);
-  const inReview = (sc.SUBMITTED ?? 0) + (sc.UNDER_REVIEW ?? 0);
-  const approved = (sc.APPROVED ?? 0) + (sc.ARCHIVED ?? 0);
+  // Fetch instruments and build a lookup map
+  useEffect(() => {
+    listInstruments().then(insts => {
+      const map: Record<string, Instrument> = {};
+      insts.forEach(i => { map[i.id] = i; });
+      setInstruments(map);
+    }).catch(() => {});
+  }, []);
 
   const evaluations = data ?? [];
-  const visible =
-    filter === 'ALL' ? evaluations : evaluations.filter((e) => e.status === filter);
-
-  const stats = useMemo(
-    () => (k ? [
-      { label: 'Instruments registered', value: k.totals.instruments },
-      { label: 'Test pages recorded', value: k.totals.test_records },
-      { label: 'Portal users', value: k.totals.users },
-      { label: 'Failed tests (all time)', value: k.failures.reduce((a, f) => a + f.count, 0) },
-    ] : []),
-    [k],
-  );
+  const visible = filter === 'ALL' ? evaluations : evaluations.filter((e) => e.status === filter);
+  const totalPages = Math.ceil(visible.length / perPage);
+  const paginatedEvals = visible.slice((page - 1) * perPage, page * perPage);
 
   return (
-    <div className="space-y-5">
-      {user && (
-        <section className="rounded-xl border border-slate-800 bg-slate-900 px-5 py-4 text-white shadow-sm" aria-label="Signed-in account">
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-sm font-semibold tracking-wide text-slate-100" aria-hidden="true">
-              {initials(user.full_name || user.username)}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Active account
-              </p>
-              <p className="mt-0.5 truncate text-base font-semibold text-white">
-                {user.full_name || user.username}
-              </p>
-              <p className="truncate text-xs text-slate-400">
-                @{user.username} · {user.email}
-              </p>
-            </div>
-            <Badge label={user.role} className="bg-slate-800 text-slate-200 ring-slate-600" />
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-teal-50">
+            <svg className="h-6 w-6 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
           </div>
-        </section>
-      )}
-
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-teal-700">Operations overview</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">Evaluation control desk</h1>
-          <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">Current workload, review progress, and recorded test outcomes.</p>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Evaluations</h1>
+            <p className="text-sm text-slate-600">Manage and track instrument evaluations</p>
+          </div>
         </div>
-        <p className="text-xs text-slate-500">Live system totals</p>
-      </div>
 
-      {kpis.error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
-          <p className="font-semibold">Dashboard totals are unavailable</p>
-          <p className="mt-1 text-xs">{kpis.error}</p>
-          <Button variant="secondary" className="mt-3" onClick={kpis.reload}>Retry totals</Button>
-        </div>
-      )}
-
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Evaluation summary">
-        {[
-          { label: 'Total reports', value: k?.totals.evaluations, valueClass: 'text-slate-950' },
-          { label: 'In progress', value: k ? inFlight : undefined, valueClass: 'text-teal-800' },
-          { label: 'Under review', value: k ? inReview : undefined, valueClass: 'text-amber-700' },
-          { label: 'Approved or archived', value: k ? approved : undefined, valueClass: 'text-emerald-700' },
-        ].map((item) => (
-          <div key={item.label} className="min-w-0 rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-5">
-            <p className="text-xs font-medium leading-4 text-slate-500">{item.label}</p>
-            {kpis.loading ? (
-              <div className="mt-3 h-8 w-16 animate-pulse rounded bg-slate-100 motion-reduce:animate-none" />
-            ) : (
-              <p className={`mt-2 text-2xl font-semibold tabular-nums tracking-tight sm:text-3xl ${item.valueClass}`}>{item.value ?? '—'}</p>
-            )}
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search evaluations..."
+              className="w-64 rounded-lg border border-slate-200 bg-white px-4 py-2 pr-10 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+            />
+            <svg className="absolute right-3 top-2.5 h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
           </div>
-        ))}
-      </section>
-
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <Card title="Evaluation volume · last 6 months">
-          <div className="h-52" aria-label="Evaluations created by month">
-            {kpis.loading ? (
-              <div className="h-full animate-pulse rounded-md bg-slate-100 motion-reduce:animate-none" />
-            ) : (k?.trend.length ?? 0) === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center px-5 text-center">
-                <p className="text-sm font-medium text-slate-700">No evaluation volume recorded</p>
-                <p className="mt-1 text-xs text-slate-500">Monthly activity will appear after reports are created.</p>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={k?.trend ?? []}>
-                  <CartesianGrid vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis allowDecimals={false} fontSize={11} width={28} tickLine={false} axisLine={false} />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#0f766e" radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </Card>
-
-        <Card title="Failure analysis · failed verdicts by test">
-          <div className="h-52">
-            {kpis.loading ? (
-              <div className="h-full animate-pulse rounded-md bg-slate-100 motion-reduce:animate-none" />
-            ) : (k?.failures.length ?? 0) === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center px-5 text-center">
-                <p className="text-sm font-medium text-slate-700">No failed tests recorded</p>
-                <p className="mt-1 text-xs text-slate-500">Failure counts will appear here when a test receives a failed verdict.</p>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={k?.failures ?? []} layout="vertical">
-                  <CartesianGrid horizontal={false} stroke="#e2e8f0" />
-                  <XAxis type="number" allowDecimals={false} fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis type="category" dataKey="kind" width={110} fontSize={10}
-                    tickFormatter={shortKind} tickLine={false} axisLine={false} />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#b91c1c" radius={[0, 3, 3, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </Card>
-      </div>
-
-      {stats.length > 0 && (
-        <section className="grid grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white lg:grid-cols-4" aria-label="Registry totals">
-          {stats.map((s) => (
-            <div key={s.label}
-              className="border-b border-r border-slate-200 px-4 py-3 text-sm last:border-r-0 lg:border-b-0">
-              <p className="text-xs leading-4 text-slate-500">{s.label}</p>
-              <p className="mt-1 text-lg font-semibold tabular-nums text-slate-900">{s.value}</p>
-            </div>
-          ))}
-        </section>
-      )}
-
-      <Card
-        title="Recent type evaluation reports"
-        actions={
-          <Button variant="secondary" onClick={reload} disabled={loading}>
-            Refresh
+          <Button
+            variant="primary"
+            onClick={() => navigate('/evaluations/new')}
+            className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            New Evaluation
           </Button>
-        }
-      >
-        <div className="mb-4 flex flex-wrap gap-2" aria-label="Filter reports by status">
-          {FILTERS.map((f) => (
-            <button key={f.key} type="button" aria-pressed={filter === f.key} onClick={() => setFilter(f.key)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium ring-1 ring-inset transition focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 ${
-                filter === f.key
-                  ? 'bg-slate-900 text-white ring-slate-900'
-                  : 'bg-white text-slate-600 ring-slate-300 hover:bg-slate-50'
-              }`}>
-              {f.label}
-            </button>
-          ))}
         </div>
+      </div>
 
-        {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
-            <p className="font-semibold">Reports could not be loaded</p>
-            <p className="mt-1 text-xs">{error}</p>
-            <Button variant="secondary" className="mt-3" onClick={reload}>Retry</Button>
-          </div>
-        )}
-
-        {loading && (
-          <div className="space-y-2">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-12 animate-pulse rounded-md bg-slate-100 motion-reduce:animate-none" />
+      {/* Filters */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex rounded-lg border border-slate-200 bg-white p-1">
+            {(['ALL', 'DRAFT', 'IN_PROGRESS', 'APPROVED'] as const).map((status) => (
+              <button
+                key={status}
+                onClick={() => { setFilter(status); setPage(1); }}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  filter === status ? 'bg-teal-600 text-white' : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {status === 'ALL' ? 'All' : status.replace('_', ' ')}
+              </button>
             ))}
           </div>
-        )}
+          <select className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-teal-500 focus:outline-none">
+            <option>All Instruments</option>
+          </select>
+          <button className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-slate-50">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Date Range
+          </button>
+        </div>
 
-        {!loading && !error && visible.length === 0 && (
-          <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center">
-            <p className="text-sm font-semibold text-slate-800">No reports in this view</p>
-            <p className="mt-1 text-xs text-slate-500">Choose another status to review the full register.</p>
+        <div className="flex items-center gap-3">
+          <select className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-teal-500 focus:outline-none">
+            <option>Sort by: Updated (Newest)</option>
+            <option>Sort by: Created (Newest)</option>
+            <option>Sort by: Status</option>
+          </select>
+          <div className="flex rounded-lg border border-slate-200 bg-white">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 ${viewMode === 'grid' ? 'bg-teal-50 text-teal-600' : 'text-slate-400'}`}
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 ${viewMode === 'list' ? 'bg-teal-50 text-teal-600' : 'text-slate-400'}`}
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
           </div>
-        )}
+        </div>
+      </div>
 
-        {!loading && !error && visible.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[780px] text-left text-sm">
-              <caption className="sr-only">Type evaluation reports</caption>
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] uppercase tracking-[0.08em] text-slate-500">
-                  <th scope="col" className="px-3 py-2.5 font-semibold">Report no.</th>
-                  <th scope="col" className="px-3 py-2.5 font-semibold">Status</th>
-                  <th scope="col" className="px-3 py-2.5 font-semibold">Outcome</th>
-                  <th scope="col" className="px-3 py-2.5 font-semibold">Purpose</th>
-                  <th scope="col" className="px-3 py-2.5 font-semibold">Created</th>
-                  <th scope="col" className="px-3 py-2.5"><span className="sr-only">Actions</span></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {visible.map((ev) => (
-                  <tr key={ev.id} className="transition-colors hover:bg-slate-50">
-                    <td className="px-3 py-3 font-mono text-xs font-semibold tabular-nums text-teal-800">
-                      {ev.report_no}
+      {/* Loading State */}
+      {loading && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="h-64 animate-pulse rounded-xl bg-slate-100" />
+          ))}
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+          <p className="font-semibold">Evaluations could not be loaded</p>
+          <p className="mt-1 text-xs">{error}</p>
+          <Button variant="secondary" className="mt-3" onClick={reload}>Retry</Button>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && !error && visible.length === 0 && (
+        <div className="rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 px-5 py-16 text-center">
+          <svg className="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <p className="mt-4 text-sm font-semibold text-slate-800">No evaluations found</p>
+          <p className="mt-1 text-xs text-slate-500">Create a new evaluation to get started.</p>
+          <Button variant="primary" className="mt-4" onClick={() => navigate('/evaluations/new')}>
+            Create Evaluation
+          </Button>
+        </div>
+      )}
+
+      {/* Grid View */}
+      {!loading && !error && visible.length > 0 && viewMode === 'grid' && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {paginatedEvals.map((ev) => {
+            const statusColor = STATUS_COLORS[ev.status] || STATUS_COLORS.DRAFT;
+            const progress = ev.status === 'APPROVED' || ev.status === 'ARCHIVED' ? 100 :
+              ev.status === 'IN_PROGRESS' ? 60 :
+              ev.status === 'DRAFT' ? 25 : 40;
+            const step = ev.status === 'DRAFT' ? 1 : ev.status === 'IN_PROGRESS' ? 3 : ev.status === 'SUBMITTED' ? 4 : 5;
+            const totalSteps = 5;
+
+            return (
+              <div
+                key={ev.id}
+                onClick={() => navigate(`/evaluations/${ev.id}`)}
+                className="group cursor-pointer rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-teal-300 hover:shadow-md"
+              >
+                <div className="mb-3 flex items-start justify-between">
+                  <span className={`rounded-md px-2.5 py-1 text-xs font-semibold ${statusColor.bg} ${statusColor.text}`}>
+                    {ev.status.replace('_', ' ')}
+                  </span>
+                  <button className="text-slate-400 hover:text-slate-600">
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="mb-3 flex h-24 items-center justify-center rounded-lg bg-slate-50">
+                  <svg className="h-16 w-16 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3L7 9H17L15 3H9Z M7 9L5 15H19L17 9H7Z M12 18v3 M10 21h4" />
+                  </svg>
+                </div>
+
+                <div className="mb-3">
+                  <h3 className="text-sm font-semibold text-slate-900">
+                    {instruments[ev.instrument_id]?.type_designation || 'Instrument'}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {instruments[ev.instrument_id]?.category || 'Weighing Instrument'}
+                  </p>
+                </div>
+
+                <div className="mb-3 grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <p className="text-slate-500">Report No.</p>
+                    <p className="font-mono font-semibold text-teal-700">{ev.report_no}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">Updated</p>
+                    <p className="font-medium text-slate-700">{fmtDateTime(ev.created_at).split(',')[0]}</p>
+                  </div>
+                </div>
+
+                <div className="mb-2">
+                  <div className="mb-1 flex items-center justify-between text-xs">
+                    <span className="text-slate-500">Step {step} of {totalSteps}</span>
+                    <span className={`font-semibold ${progress === 100 ? 'text-green-600' : 'text-teal-600'}`}>
+                      {progress}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className={`h-full rounded-full transition-all ${progress === 100 ? 'bg-green-500' : 'bg-teal-500'}`}
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+
+                {progress === 100 && (
+                  <p className="text-xs font-medium text-green-600">Completed</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* List View */}
+      {!loading && !error && visible.length > 0 && viewMode === 'list' && (
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-slate-200 bg-slate-50">
+              <tr>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Report No.</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Status</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Instrument</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Updated</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-600">Progress</th>
+                <th className="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {paginatedEvals.map((ev) => {
+                const statusColor = STATUS_COLORS[ev.status] || STATUS_COLORS.DRAFT;
+                const progress = ev.status === 'APPROVED' ? 100 : ev.status === 'IN_PROGRESS' ? 60 : 25;
+
+                return (
+                  <tr key={ev.id} className="cursor-pointer transition-colors hover:bg-slate-50" onClick={() => navigate(`/evaluations/${ev.id}`)}>
+                    <td className="px-4 py-3 font-mono text-xs font-semibold text-teal-700">{ev.report_no}</td>
+                    <td className="px-4 py-3">
+                      <span className={`rounded-md px-2 py-1 text-xs font-semibold ${statusColor.bg} ${statusColor.text}`}>
+                        {ev.status.replace('_', ' ')}
+                      </span>
                     </td>
-                    <td className="px-3 py-3"><StatusBadge status={ev.status} /></td>
-                    <td className="px-3 py-3">
-                      {ev.outcome
-                        ? <OutcomeBadge outcome={ev.outcome} />
-                        : <span className="text-slate-400">—</span>}
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-slate-900">{instruments[ev.instrument_id]?.type_designation || 'Instrument'}</p>
+                      <p className="text-xs text-slate-500">{instruments[ev.instrument_id]?.category || 'Weighing Instrument'}</p>
                     </td>
-                    <td className="px-3 py-3 text-slate-600">{ev.purpose.replaceAll('_', ' ')}</td>
-                    <td className="whitespace-nowrap px-3 py-3 text-xs tabular-nums text-slate-500">{fmtDateTime(ev.created_at)}</td>
-                    <td className="px-3 py-3 text-right">
-                      <Button variant="ghost" onClick={() => navigate(`/evaluations/${ev.id}`)}>
-                        View
-                      </Button>
+                    <td className="px-4 py-3 text-xs text-slate-600">{fmtDateTime(ev.created_at).split(',')[0]}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100">
+                          <div className={`h-full rounded-full ${progress === 100 ? 'bg-green-500' : 'bg-teal-500'}`} style={{ width: `${progress}%` }} />
+                        </div>
+                        <span className="text-xs font-semibold text-slate-600">{progress}%</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button className="text-slate-400 hover:text-slate-600">
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {visible.length > 0 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-slate-600">
+            Showing {(page - 1) * perPage + 1} to {Math.min(page * perPage, visible.length)} of {visible.length} evaluations
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className={`rounded-lg px-3 py-2 text-sm font-medium ${
+                  p === page ? 'bg-teal-600 text-white' : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
-        )}
-      </Card>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-600">Show</span>
+            <select className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm">
+              <option>8</option>
+              <option>16</option>
+              <option>32</option>
+            </select>
+            <span className="text-sm text-slate-600">per page</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

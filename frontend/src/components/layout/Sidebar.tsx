@@ -11,39 +11,41 @@ interface NavItem {
   icon: React.ReactNode;
   roles?: Role[];
   end?: boolean;
-  tag?: string;
 }
 
 const NAV: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: <IconDashboard />, end: true },
   { to: '/evaluations', label: 'Evaluations', icon: <IconClipboard /> },
+  { to: '/tests', label: 'Samples', icon: <IconFlask /> },
   { to: '/instruments', label: 'Instruments', icon: <IconScale /> },
-  { to: '/parties', label: 'Manufacturers', icon: <IconUsers /> },
   { to: '/reports', label: 'Reports', icon: <IconReport /> },
-  { to: '/rulesets', label: 'Rule Sets', icon: <IconFlask /> },
-  { to: '/audit', label: 'Audit Log', icon: <IconKey />, roles: ['ADMIN', 'REVIEWER'] },
+  { to: '/calibration', label: 'Calibration', icon: <IconFlask /> },
   { to: '/admin/users', label: 'Users', icon: <IconUsers />, roles: ['ADMIN'] },
+  { to: '/settings', label: 'Settings', icon: <IconKey /> },
+  { to: '/audit', label: 'Audit Trail', icon: <IconKey />, roles: ['ADMIN', 'REVIEWER'] },
 ];
 
 export default function Sidebar() {
   const user = useAuthStore((s) => s.user);
 
   return (
-    <aside className="hidden w-56 shrink-0 flex-col border-r border-white/10 bg-primary-950 md:flex lg:w-60">
-      <div className="flex min-h-16 items-center gap-3 border-b border-white/10 px-4 lg:px-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-md border border-primary-400/40 bg-white/5 font-mono text-[11px] font-bold tracking-tight text-primary-200">
-          R76
+    <aside className="hidden w-60 shrink-0 flex-col bg-teal-800 md:flex">
+      <div className="flex min-h-16 items-center gap-3 px-6 py-5">
+        <div className="flex h-10 w-10 items-center justify-center">
+          <svg viewBox="0 0 24 24" fill="none" className="h-8 w-8 text-white">
+            <path d="M9 3L7 9H17L15 3H9Z" fill="currentColor" opacity="0.9"/>
+            <path d="M7 9L5 15H19L17 9H7Z" fill="currentColor"/>
+            <circle cx="12" cy="18" r="2" fill="currentColor"/>
+            <path d="M10 21H14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
         </div>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold tracking-tight text-white">NAWI Laboratory</p>
-          <p className="truncate text-[11px] text-slate-400">Type evaluation console</p>
+          <p className="text-lg font-bold tracking-tight text-white">LabTest</p>
+          <p className="text-[10px] font-medium uppercase tracking-wider text-teal-200">Laboratory System</p>
         </div>
       </div>
 
-      <div className="px-4 pb-2 pt-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-        Workspace
-      </div>
-      <nav aria-label="Primary navigation" className="flex-1 space-y-1 px-2.5">
+      <nav aria-label="Primary navigation" className="flex-1 space-y-1 px-3 py-4">
         {NAV.filter((item) => !item.roles || (user && item.roles.includes(user.role))).map(
           (item) => (
             <NavLink
@@ -51,28 +53,27 @@ export default function Sidebar() {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex min-h-10 items-center gap-3 rounded-md border-l-2 px-3 py-2 text-sm font-medium transition-colors ${
+                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
                   isActive
-                    ? 'border-primary-400 bg-white/10 text-white'
-                    : 'border-transparent text-slate-300 hover:bg-white/[0.06] hover:text-white'
+                    ? 'bg-teal-700 text-white shadow-sm'
+                    : 'text-teal-100 hover:bg-teal-700/50 hover:text-white'
                 }`
               }
             >
-              {item.icon}
+              <span className="flex h-5 w-5 items-center justify-center">{item.icon}</span>
               <span className="flex-1">{item.label}</span>
-              {item.tag && (
-                <span className="rounded-sm bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-slate-300">
-                  {item.tag}
-                </span>
-              )}
             </NavLink>
           ),
         )}
       </nav>
 
-      <div className="border-t border-white/10 px-4 py-4 lg:px-5">
-        <p className="font-mono text-[10px] uppercase tracking-wider text-slate-500">Laboratory record</p>
-        <p className="mt-1 text-[11px] leading-4 text-slate-400">SIH26035 · Consumer Affairs</p>
+      <div className="border-t border-teal-700 px-4 py-4">
+        <button className="flex w-full items-center gap-2 text-xs font-medium text-teal-200 hover:text-white">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+          </svg>
+          Collapse
+        </button>
       </div>
     </aside>
   );
